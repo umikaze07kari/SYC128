@@ -2,7 +2,7 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "pure-island-journey-v4";
+  const STORAGE_KEY = "pure-island-journey-v5";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const STAGE_COUNTS = [18, 20, 10, 5, 2, 1];
   const STAGE_LABELS = ["登岛", "复活20", "十强", "五强", "决赛", "岛主"];
@@ -48,7 +48,8 @@
 
   function showView(name) {
     els.views.forEach((view) => view.classList.toggle("active", view.id === `${name}View`));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.body.dataset.view = name;
+    window.scrollTo(0, 0);
   }
 
   function shuffled(items) {
@@ -69,23 +70,42 @@
     return score;
   }
 
+  function effectiveSeed(song) {
+    return song.seedScore + (song.source === "album" ? 8 : 0);
+  }
+
+  function landingPlacementCost(group, candidate) {
+    const members = group.map(byId);
+    const sameSource = members.filter((song) => song.source === candidate.source).length;
+    const sameRelease = members.filter((song) => song.release === candidate.release).length;
+    const sameMood = members.filter((song) => song.mood === candidate.mood).length;
+    const groupPower = members.reduce((sum, song) => sum + effectiveSeed(song), 0);
+    const albumCollision = candidate.source === "album" && sameSource ? 800 : 0;
+    return albumCollision + sameRelease * 420 + sameSource * 90 - sameMood * 4 + groupPower * .08 + Math.random();
+  }
+
   function makeLandingGroups(pool) {
-    const ranked = [...pool].sort((a, b) => b.seedScore - a.seedScore);
+    const ranked = [...pool].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
     const directSeed = ranked.shift();
     const seeds = ranked.splice(0, 17);
-    const remaining = [...ranked];
-    const groups = seeds.map((seed) => {
-      const group = [seed];
-      while (group.length < 4) {
-        let bestIndex = 0;
-        remaining.forEach((candidate, index) => {
-          if (similarity(seed, candidate) > similarity(seed, remaining[bestIndex])) bestIndex = index;
-        });
-        group.push(remaining.splice(bestIndex, 1)[0]);
-      }
-      return shuffled(group).map((song) => song.id);
-    });
-    return { directSeed: directSeed.id, groups };
+    const groups = seeds.map((seed) => [seed.id]);
+    const remaining = [...ranked].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
+
+    while (remaining.length) {
+      const batch = remaining.splice(0, groups.length);
+      const sourceFrequency = batch.reduce((counts, song) => ({ ...counts, [song.source]: (counts[song.source] || 0) + 1 }), {});
+      batch.sort((a, b) => {
+        const albumPriority = Number(b.source === "album") - Number(a.source === "album");
+        return albumPriority || sourceFrequency[b.source] - sourceFrequency[a.source] || effectiveSeed(b) - effectiveSeed(a);
+      });
+      const available = [...groups];
+      batch.forEach((candidate) => {
+        available.sort((a, b) => landingPlacementCost(a, candidate) - landingPlacementCost(b, candidate));
+        available.shift().push(candidate.id);
+      });
+    }
+
+    return { directSeed: directSeed.id, groups: shuffled(groups).map((group) => shuffled(group)) };
   }
 
   function makeDuelPairs(ids) {
@@ -105,7 +125,7 @@
   function freshState() {
     const { directSeed, groups } = makeLandingGroups(songs);
     return {
-      version: 4,
+      version: 5,
       createdAt: new Date().toISOString(),
       phase: "landing",
       directSeed,
@@ -135,7 +155,7 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 4 ? saved : null;
+      return saved?.version === 5 ? saved : null;
     } catch {
       return null;
     }
@@ -163,7 +183,7 @@
 
   function choiceCard(song) {
     return `
-      <button class="cover-choice" type="button" data-song-id="${song.id}">
+      <button class="cover-choice source-${song.source}" type="button" data-song-id="${song.id}">
         <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}</em></div>
         <div class="choice-info">
           <h3>${song.title}</h3>
@@ -282,7 +302,7 @@
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
     els.selectionGrid.innerHTML = selectionCandidates().map((song) => `
-      <button class="select-card ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}">
+      <button class="select-card source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}">
         ${imageMarkup(song)}<div><b>${song.title}</b><small>${song.release}</small></div>
       </button>`).join("");
     showView("selection");
