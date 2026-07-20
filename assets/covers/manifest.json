@@ -168,8 +168,11 @@
     "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/8c/f9/21/8cf9219d-ad38-840f-ddbc-e02323c864d3/cover.jpg/600x600bb.jpg"
   },
   "kai-shi-dong-le-live": {
-    "file": "assets/cover-fallback.svg",
-    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+    "file": "assets/covers/kai-shi-dong-le-live.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "开始懂了 (Live 典藏版)",
+    "collection": "歌手2025 (第10期 Live典藏版)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b1/15/6f/b1156f8f-bfac-1913-0314-05fe2b60c8f0/cover.jpg/600x600bb.jpg"
   },
   "dear-friend-live": {
     "file": "assets/covers/dear-friend-live.jpg",
@@ -340,11 +343,14 @@
   },
   "ren-xing": {
     "file": "assets/cover-fallback.svg",
-    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+    "error": "no artwork result"
   },
   "ru-xing": {
-    "file": "assets/cover-fallback.svg",
-    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+    "file": "assets/covers/ru-xing.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "如星 (总台精品短剧集《奇迹》插曲&片尾曲)",
+    "collection": "如星 (总台精品短剧集《奇迹》插曲&片尾曲) - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/a8/f0/62/a8f062dd-1404-01e6-cfad-0f0f38a8bcc2/4896004717527.jpg/600x600bb.jpg"
   },
   "di-yi-ci": {
     "file": "assets/covers/di-yi-ci.jpg",
@@ -432,6 +438,410 @@
     "track": "光波",
     "collection": "光波 - Single",
     "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/41/56/de/4156deb8-11cf-ccfb-93a0-87fac69acec2/4896016213215.jpg/600x600bb.jpg"
+  },
+  "yong-bu-shi-lian-de-ai": {
+    "file": "assets/covers/yong-bu-shi-lian-de-ai.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "永不失联的爱 (正式版)",
+    "collection": "永不失联的爱 (正式版) - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/c7/94/37/c794371d-bf5b-0941-0e2c-ec89b519fa7b/4894972324297.jpg/600x600bb.jpg"
+  },
+  "sen-zhi-lian-ge": {
+    "file": "assets/covers/sen-zhi-lian-ge.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "森之恋歌",
+    "collection": "森之恋歌 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b3/2f/73/b32f734d-d8e8-9efb-ea71-3e6623b0f658/4894894565150.jpg/600x600bb.jpg"
+  },
+  "xing-mang": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "ai-de-qi-huan-lv-xing": {
+    "file": "assets/cover-fallback.svg",
+    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+  },
+  "hong-qing-ting": {
+    "file": "assets/covers/hong-qing-ting.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "红蜻蜓(《人生路不熟》电影特别歌谣)",
+    "collection": "人生路不熟 电影原声专辑",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4b/e3/76/4be3769c-b275-f110-f386-de3df86442d6/196873268330.jpg/600x600bb.jpg"
+  },
+  "qing-ren": {
+    "file": "assets/covers/qing-ren.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "情人",
+    "collection": "情人 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/c0/27/87/c0278767-9d6c-16c5-85c2-a2e3e5887053/196871662550.jpg/600x600bb.jpg"
+  },
+  "mei-man-yi-sheng": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "chun-mei-mei-sleep": {
+    "file": "assets/covers/chun-mei-mei-sleep.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "纯寐寐",
+    "collection": "纯寐寐 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/2c/a2/99/2ca29956-49f9-01df-8ec1-737af07165fc/4896004779730.jpg/600x600bb.jpg"
+  },
+  "wo-zai-yi-de": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "deng-ni-lai": {
+    "file": "assets/covers/deng-ni-lai.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "等你来",
+    "collection": "等你来 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/11/95/a2/1195a283-29d7-b321-3438-bcde617ec910/4894972334937.jpg/600x600bb.jpg"
+  },
+  "piao-yang-guo-hai-lai-kan-ni": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "always-on-my-way": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "sinking": {
+    "file": "assets/covers/sinking.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "Sinking",
+    "collection": "Sinking - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/87/e4/bb/87e4bbe0-57ce-e648-3caa-e0d160775837/4896004489752.jpg/600x600bb.jpg"
+  },
+  "yue-liang-wu-tai": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "wo-men-xiang-xin": {
+    "file": "assets/covers/wo-men-xiang-xin.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "我们相信",
+    "collection": "我们相信 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/ed/c0/4f/edc04fbe-2d7a-d890-bded-0371934fd2e2/4894944967736.jpg/600x600bb.jpg"
+  },
+  "jian-xin-ru-wu": {
+    "file": "assets/covers/jian-xin-ru-wu.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "见信如晤 (2024央视元宵晚会歌曲录音室版)",
+    "collection": "见信如晤 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e4/c3/52/e4c352a0-7488-d697-a0c4-d185d790ab82/4896004059221.jpg/600x600bb.jpg"
+  },
+  "wu-you-nian": {
+    "file": "assets/covers/wu-you-nian.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "无忧·念 (《无忧渡》影视剧片尾曲)",
+    "collection": "无忧渡 影视原声带",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/16/b2/b3/16b2b372-8382-17ca-0114-929a28e76536/4894972821161.jpg/600x600bb.jpg"
+  },
+  "bu-ru-jian-yi-mian": {
+    "file": "assets/covers/bu-ru-jian-yi-mian.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "不如见一面",
+    "collection": "不如见一面 - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/1b/c1/89/1bc18951-fe24-cdf3-ee62-d4b8e2ca558c/cover.jpg/600x600bb.jpg"
+  },
+  "wei-wan-dai-xu": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "xiang-feng-yi-yang": {
+    "file": "assets/covers/xiang-feng-yi-yang.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "像风一样 (Live)",
+    "collection": "2020中国好声音第3期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/97/ba/c3/97bac371-f977-3afb-1cb6-bb449ecf16ed/4894859299274.jpg/600x600bb.jpg"
+  },
+  "forever-young": {
+    "file": "assets/covers/forever-young.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "Forever Young (Live)",
+    "collection": "2020中国好声音 第6期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/2c/87/c8/2c87c8a6-e44e-04e9-ff60-295484299a09/4894944893134.jpg/600x600bb.jpg"
+  },
+  "xun-yi-ge-tian-huang-di-lao-de-di-fang": {
+    "file": "assets/covers/xun-yi-ge-tian-huang-di-lao-de-di-fang.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "寻一个天荒地老的地方 (Live)",
+    "collection": "2020中国好声音 第8期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/01/3d/d7/013dd70b-36b1-904e-a58c-7c26b4133589/4894859299328.jpg/600x600bb.jpg"
+  },
+  "ru-ci": {
+    "file": "assets/covers/ru-ci.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "如此 (Live)",
+    "collection": "2020中国好声音 第10期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f3/74/64/f37464e8-b7f4-a0ad-87f6-7e741af9adab/4894944893325.jpg/600x600bb.jpg"
+  },
+  "ren-a": {
+    "file": "assets/covers/ren-a.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "人啊",
+    "collection": "2020中国好声音 第11期 (Live) - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/db/e6/43/dbe643ba-525e-be56-c831-54054e6499b6/4894859299335.jpg/600x600bb.jpg"
+  },
+  "hao-jiu-bu-jian": {
+    "file": "assets/covers/hao-jiu-bu-jian.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "好久不见 (Live)",
+    "collection": "2020中国好声音 第13期",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/65/55/96/655596fc-0ed8-74e0-cee1-dd20a44f37c1/6942248367160.png/600x600bb.jpg"
+  },
+  "xing-sailing": {
+    "file": "assets/covers/xing-sailing.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "星·Sailing (Live)",
+    "collection": "2020中国好声音 第13期",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/65/55/96/655596fc-0ed8-74e0-cee1-dd20a44f37c1/6942248367160.png/600x600bb.jpg"
+  },
+  "bu-bi-zai-hu-wo-shi-shei": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "xia-yu-tian": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "gen-ben-bu-shi-wo-dui-shou": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "she-li-duan": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "soap": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "kuai-le-shi-yong-shou-ce": {
+    "file": "assets/covers/kuai-le-shi-yong-shou-ce.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "快乐使用手册",
+    "collection": "说唱听我的2 (第三期Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/8a/7c/d5/8a7cd578-2a09-4701-40ae-f46e892b3122/cover.jpg/600x600bb.jpg"
+  },
+  "shi-guang-dao-xu": {
+    "file": "assets/covers/shi-guang-dao-xu.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "时光·倒叙 (Live)",
+    "collection": "说唱听我的2 (第四期Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/99/ac/dd/99acdd63-4b0d-dbf8-308c-5638e76f7240/cover.jpg/600x600bb.jpg"
+  },
+  "po-chen-shan": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "moon-talk": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "sunrise": {
+    "file": "assets/cover-fallback.svg",
+    "error": "HTTP Error 429: Too Many Requests"
+  },
+  "rnb-all-night": {
+    "file": "assets/covers/rnb-all-night.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "R&B All Night (Live)",
+    "collection": "爆裂舞台 第1期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/17/9a/9f/179a9ff5-d6c3-bf0b-2282-bdfeddc45405/4896010015259.jpg/600x600bb.jpg"
+  },
+  "bie-wen-hen-ke-pa": {
+    "file": "assets/covers/bie-wen-hen-ke-pa.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "别问很可怕 (Live)",
+    "collection": "爆裂舞台 第4期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/84/69/f5846921-5350-389d-a85b-c4b397aba287/4896010015273.jpg/600x600bb.jpg"
+  },
+  "ma-ma-shuo": {
+    "file": "assets/covers/ma-ma-shuo.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "妈妈说 (Live)",
+    "collection": "爆裂舞台 第5期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/df/f0/24/dff024c4-c771-1d8d-2c97-d16b5a80c2ce/4896010015280.jpg/600x600bb.jpg"
+  },
+  "get-away": {
+    "file": "assets/covers/get-away.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "Get Away (Live)",
+    "collection": "爆裂舞台 第7期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/15/63/2c/15632cd4-af6e-fd97-2892-0bb95873c615/4896010015297.jpg/600x600bb.jpg"
+  },
+  "bao-lie-zhan-xian-lian-meng": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "bu-zhi-de": {
+    "file": "assets/covers/bu-zhi-de.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "不值得 (Live)",
+    "collection": "爆裂舞台 第9期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/54/32/64/543264a6-0aed-2897-9c68-851458920f81/4896010015310.jpg/600x600bb.jpg"
+  },
+  "lang": {
+    "file": "assets/covers/lang.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "狼 (Live)",
+    "collection": "爆裂舞台 第10期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/63/ea/b1/63eab1ec-5726-aaf2-3f9a-a78277f0f270/4896010015327.jpg/600x600bb.jpg"
+  },
+  "if-only": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "zi-you": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "fu-er-mo-si": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "nv-er-guo": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "stand-by-me": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "ju-gao-zheng": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "ying-di": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "ai-yu-tong-de-bian-yuan": {
+    "file": "assets/covers/ai-yu-tong-de-bian-yuan.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "爱与痛的边缘 (Live)",
+    "collection": "声生不息港乐季 (第一期 Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/ce/e8/3d/cee83da9-90d2-4d88-bb57-f3146954593e/cover.jpg/600x600bb.jpg"
+  },
+  "lai-sheng-yuan": {
+    "file": "assets/covers/lai-sheng-yuan.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "来生缘 (Live)",
+    "collection": "声生不息港乐季 (第二期 Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/a3/f2/13/a3f2133f-16c9-fea4-9326-cc0e18c2cb8e/cover.jpg/600x600bb.jpg"
+  },
+  "gao-shan-di-gu": {
+    "file": "assets/covers/gao-shan-di-gu.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "高山低谷 (Live)",
+    "collection": "声生不息港乐季 (第四期 Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/90/5f/8c/905f8ca4-e968-1bda-e50b-eff31097f129/cover.jpg/600x600bb.jpg"
+  },
+  "san-ren-you": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "fen-fen-zhong-xu-yao-ni": {
+    "file": "assets/cover-fallback.svg",
+    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+  },
+  "zhe-me-jin-na-me-yuan": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "wei-ni-zhong-qing": {
+    "file": "assets/covers/wei-ni-zhong-qing.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "为你钟情 (Live)",
+    "collection": "声生不息.港乐季 (第九期Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/9c/00/be/9c00be42-5e48-f926-985d-94858062fd2f/cover.jpg/600x600bb.jpg"
+  },
+  "ai-shi-yong-heng": {
+    "file": "assets/covers/ai-shi-yong-heng.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "爱是永恒 (Live)",
+    "collection": "声生不息港乐季 (第十期Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/b8/8e/6c/b88e6c6b-47c3-59e6-36cb-c3ecc5c67178/cover.jpg/600x600bb.jpg"
+  },
+  "qian-yi-ge-ye-wan": {
+    "file": "assets/covers/qian-yi-ge-ye-wan.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "千亿个夜晚 (Live版伴奏)",
+    "collection": "声生不息.港乐季 (第十一期 Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/f6/e0/f1/f6e0f147-cd16-c1e3-bcc8-b77da208ffdc/cover.jpg/600x600bb.jpg"
+  },
+  "wang-ji-ta": {
+    "file": "assets/covers/wang-ji-ta.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "忘记他 (Live)",
+    "collection": "声生不息港乐季 (第十二期Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1d/5a/68/1d5a6808-5a14-7726-987c-71221881ecd2/cover.jpg/600x600bb.jpg"
+  },
+  "ta-lai-ting-wo-de-yan-chang-hui": {
+    "file": "assets/covers/ta-lai-ting-wo-de-yan-chang-hui.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "她来听我的演唱会 (Live)",
+    "collection": "声生不息港乐季 (第十二期Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1d/5a/68/1d5a6808-5a14-7726-987c-71221881ecd2/cover.jpg/600x600bb.jpg"
+  },
+  "rang-ta-jiang-luo": {
+    "file": "assets/covers/rang-ta-jiang-luo.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "让她降落 (Live)",
+    "collection": "剧好听的歌 第1期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6e/f1/0e/6ef10efb-7225-a3f9-3d75-e184f09dd3b6/4894944728474.jpg/600x600bb.jpg"
+  },
+  "zui-chang-de-lv-tu": {
+    "file": "assets/covers/zui-chang-de-lv-tu.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "最长的旅途 (Live)",
+    "collection": "剧好听的歌 第3期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/68/95/b0/6895b085-3fdf-6753-8f98-2202ba241791/4894944728498.jpg/600x600bb.jpg"
+  },
+  "ai-de-hui-gui-xian": {
+    "file": "assets/cover-fallback.svg",
+    "error": "<urlopen error [Errno 11001] getaddrinfo failed>"
+  },
+  "xuan-cao-hua": {
+    "file": "assets/covers/xuan-cao-hua.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "萱草花 (Live)",
+    "collection": "剧好听的歌 第7期 (Live)",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/42/95/54/4295541b-ec27-08c8-72e8-d41a641e561d/4894944728566.jpg/600x600bb.jpg"
+  },
+  "wo-yao-ni": {
+    "file": "assets/covers/wo-yao-ni.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "我要你 (Live)",
+    "collection": "剧好听的歌 第8期 (Live) - EP",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/bb/fe/a1/bbfea134-61ae-0afb-fe75-bb5a55c0991e/4894944728559.jpg/600x600bb.jpg"
+  },
+  "dian-qi-jiao-jian-ai": {
+    "file": "assets/covers/dian-qi-jiao-jian-ai.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "踮起脚尖爱 (Live)",
+    "collection": "剧好听的歌 第10期",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a3/7e/cc/a37ecc27-411b-d6bb-1435-1568934e9d81/4894944728535.jpg/600x600bb.jpg"
+  },
+  "tai-yang-gong-zhu": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "ming-zhi-gu-wen": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "let-me-go": {
+    "file": "assets/cover-fallback.svg",
+    "error": "no artwork result"
+  },
+  "gan-lan-shu": {
+    "file": "assets/covers/gan-lan-shu.jpg",
+    "source": "Apple Music / iTunes Search API",
+    "track": "橄榄树(Live)",
+    "collection": "橄榄树(Live) - Single",
+    "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/76/71/20/76712074-95e5-8901-1e10-23884138af95/ganlanshu.jpg/600x600bb.jpg"
   },
   "gei-dian-ying-ren-de-qing-shu": {
     "file": "assets/covers/gei-dian-ying-ren-de-qing-shu.jpg",

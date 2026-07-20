@@ -18,7 +18,7 @@ SONGS_JS = ROOT / "songs.js"
 OUT = ROOT / "assets" / "covers"
 OUT.mkdir(parents=True, exist_ok=True)
 
-ROW = re.compile(r'^\s*\["([^"]+)",\s*"([^"]+)",\s*"(album|single|ost|live)"', re.M)
+ROW = re.compile(r'^\s*\["([^"]+)",\s*"([^"]+)",\s*"(album|single|ost|live|soloWork|collabWork|variety|other)"', re.M)
 
 
 def load_songs() -> list[tuple[str, str, str]]:
@@ -65,9 +65,18 @@ def artwork_for(title: str, source: str) -> tuple[str | None, dict | None]:
 
 
 def main() -> None:
+    manifest_path = OUT / "manifest.json"
+    try:
+        previous: dict[str, dict] = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        previous = {}
     manifest: dict[str, dict] = {}
     for index, (song_id, title, source) in enumerate(load_songs(), 1):
         target = OUT / f"{song_id}.jpg"
+        if target.exists() and song_id in previous and "error" not in previous[song_id]:
+            manifest[song_id] = previous[song_id]
+            print(f"[{index:03d}] KEEP {title}")
+            continue
         try:
             url, item = artwork_for(title, source)
             if not url:
@@ -92,7 +101,7 @@ def main() -> None:
             manifest[song_id] = {"file": "assets/cover-fallback.svg", "error": str(exc)}
             print(f"[{index:02d}] MISS {title}: {exc}")
         time.sleep(0.08)
-    (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     success = sum(1 for item in manifest.values() if "error" not in item)
     print(f"Downloaded {success}/{len(manifest)} covers")
 

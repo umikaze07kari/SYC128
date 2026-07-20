@@ -1,4 +1,4 @@
-const CACHE = "pure-island-v5";
+const CACHE = "pure-island-v6";
 const ASSETS = ["./", "./index.html", "./styles.css", "./songs.js", "./app.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg"];
 
 self.addEventListener("install", (event) => {

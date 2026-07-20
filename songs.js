@@ -81,6 +81,98 @@ const rawSongs = [
   ["liang-zai-ri-ji", "靓仔日记", "single", "solo", "轻快", "个人数字单曲", 58],
   ["guang-bo", "光波", "single", "solo", "律动", "巡演主题数字单曲", 57],
 
+  // 独唱作品（《如星》已在 OST 分类中收录，不重复添加）
+  ["yong-bu-shi-lian-de-ai", "永不失联的爱（正式版）", "soloWork", "solo", "抒情", "个人独唱作品", 97],
+  ["sen-zhi-lian-ge", "森之恋歌", "soloWork", "solo", "治愈", "个人独唱作品", 91],
+  ["xing-mang", "星芒", "soloWork", "solo", "明亮", "个人独唱作品", 76],
+  ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "soloWork", "solo", "明亮", "个人独唱作品", 78],
+  ["hong-qing-ting", "红蜻蜓", "soloWork", "solo", "治愈", "个人独唱作品", 75],
+  ["qing-ren", "情人", "soloWork", "solo", "抒情", "个人独唱作品", 82],
+  ["mei-man-yi-sheng", "美满一生", "soloWork", "solo", "治愈", "个人独唱作品", 73],
+  ["chun-mei-mei-sleep", "纯寐寐", "soloWork", "solo", "氛围", "个人独唱作品", 70],
+  ["wo-zai-yi-de", "我在意的", "soloWork", "solo", "抒情", "个人独唱作品", 72],
+
+  // 合唱作品
+  ["deng-ni-lai", "等你来", "collabWork", "collab", "明亮", "合作歌曲", 74],
+  ["piao-yang-guo-hai-lai-kan-ni", "飘洋过海来看你", "collabWork", "collab", "抒情", "合作歌曲", 84],
+  ["always-on-my-way", "always on my way", "collabWork", "collab", "R&B", "合作歌曲", 76],
+  ["sinking", "Sinking", "collabWork", "collab", "R&B", "合作歌曲", 75],
+  ["yue-liang-wu-tai", "月亮舞台", "collabWork", "collab", "氛围", "合作歌曲", 77],
+  ["wo-men-xiang-xin", "我们相信", "collabWork", "collab", "大气", "合作歌曲", 73],
+  ["jian-xin-ru-wu", "见信如晤", "collabWork", "collab", "叙事", "合作歌曲", 72],
+  ["wu-you-nian", "无忧·念", "collabWork", "collab", "国风", "合作歌曲", 70],
+  ["bu-ru-jian-yi-mian", "不如见一面", "collabWork", "collab", "抒情", "合作歌曲", 81],
+  ["wei-wan-dai-xu", "未完待续", "collabWork", "collab", "叙事", "合作歌曲", 71],
+
+  // 综艺舞台：2020《中国好声音》
+  ["xiang-feng-yi-yang", "像风一样", "variety", "solo", "抒情", "综艺《2020中国好声音》", 88],
+  ["forever-young", "Forever Young", "variety", "solo", "明亮", "综艺《2020中国好声音》", 84],
+  ["xun-yi-ge-tian-huang-di-lao-de-di-fang", "寻一个天荒地老的地方", "variety", "solo", "抒情", "综艺《2020中国好声音》", 80],
+  ["ru-ci", "如此", "variety", "solo", "氛围", "综艺《2020中国好声音》", 78],
+  ["ren-a", "人啊", "variety", "solo", "叙事", "综艺《2020中国好声音》", 82],
+  ["hao-jiu-bu-jian", "好久不见", "variety", "solo", "抒情", "综艺《2020中国好声音》", 86],
+  ["xing-sailing", "星·Sailing", "variety", "solo", "大气", "综艺《2020中国好声音》", 77],
+
+  // 《天赐的声音》
+  ["bu-bi-zai-hu-wo-shi-shei", "不必在乎我是谁", "variety", "solo", "抒情", "综艺《天赐的声音》", 78],
+  ["xia-yu-tian", "下雨天", "variety", "solo", "抒情", "综艺《天赐的声音》", 80],
+  ["gen-ben-bu-shi-wo-dui-shou", "根本不是我对手", "variety", "solo", "律动", "综艺《天赐的声音》", 70],
+  ["she-li-duan", "舍离断", "variety", "solo", "国风", "综艺《天赐的声音》", 72],
+
+  ["soap", "Soap", "variety", "solo", "R&B", "综艺《为歌而赞》", 74],
+
+  // 《说唱听我的》
+  ["kuai-le-shi-yong-shou-ce", "快乐使用手册", "variety", "collab", "律动", "综艺《说唱听我的》", 74],
+  ["shi-guang-dao-xu", "时光·倒叙", "variety", "collab", "叙事", "综艺《说唱听我的》", 71],
+  ["po-chen-shan", "破衬衫", "variety", "collab", "律动", "综艺《说唱听我的》", 72],
+  ["moon-talk", "Moon Talk", "variety", "collab", "R&B", "综艺《说唱听我的》", 73],
+  ["sunrise", "Sunrise", "variety", "collab", "明亮", "综艺《说唱听我的》", 72],
+
+  // 《爆裂舞台》
+  ["rnb-all-night", "R&B All Night", "variety", "solo", "R&B", "综艺《爆裂舞台》", 80],
+  ["bie-wen-hen-ke-pa", "别问很可怕", "variety", "solo", "情绪", "综艺《爆裂舞台》", 78],
+  ["ma-ma-shuo", "妈妈说", "variety", "solo", "律动", "综艺《爆裂舞台》", 75],
+  ["get-away", "Get Away", "variety", "solo", "舞曲", "综艺《爆裂舞台》", 76],
+  ["bao-lie-zhan-xian-lian-meng", "爆裂战线联盟", "variety", "collab", "舞曲", "综艺《爆裂舞台》", 73],
+  ["bu-zhi-de", "不值得", "variety", "solo", "抒情", "综艺《爆裂舞台》", 81],
+  ["lang", "狼", "variety", "solo", "摇滚", "综艺《爆裂舞台》", 79],
+
+  // 《我们的歌》
+  ["if-only", "If Only", "variety", "collab", "抒情", "综艺《我们的歌》", 77],
+  ["zi-you", "自由", "variety", "collab", "摇滚", "综艺《我们的歌》", 76],
+  ["fu-er-mo-si", "福尔摩斯", "variety", "collab", "律动", "综艺《我们的歌》", 75],
+  ["nv-er-guo", "女儿国", "variety", "collab", "国风", "综艺《我们的歌》", 79],
+  ["stand-by-me", "Stand By Me", "variety", "collab", "经典", "综艺《我们的歌》", 76],
+  ["ju-gao-zheng", "惧高症", "variety", "collab", "情绪", "综艺《我们的歌》", 74],
+  ["ying-di", "影帝", "variety", "collab", "叙事", "综艺《我们的歌》", 75],
+
+  // 《声生不息·港乐季》
+  ["ai-yu-tong-de-bian-yuan", "爱与痛的边缘", "variety", "solo", "抒情", "综艺《声生不息·港乐季》", 83],
+  ["lai-sheng-yuan", "来生缘", "variety", "collab", "经典", "综艺《声生不息·港乐季》", 78],
+  ["gao-shan-di-gu", "高山低谷", "variety", "solo", "叙事", "综艺《声生不息·港乐季》", 82],
+  ["san-ren-you", "三人游", "variety", "collab", "R&B", "综艺《声生不息·港乐季》", 80],
+  ["fen-fen-zhong-xu-yao-ni", "分分钟需要你", "variety", "collab", "轻快", "综艺《声生不息·港乐季》", 80],
+  ["zhe-me-jin-na-me-yuan", "这么近那么远", "variety", "solo", "氛围", "综艺《声生不息·港乐季》", 79],
+  ["wei-ni-zhong-qing", "为你钟情", "variety", "collab", "抒情", "综艺《声生不息·港乐季》", 81],
+  ["ai-shi-yong-heng", "爱是永恒", "variety", "collab", "大气", "综艺《声生不息·港乐季》", 82],
+  ["qian-yi-ge-ye-wan", "千亿个夜晚", "variety", "solo", "经典", "综艺《声生不息·港乐季》", 78],
+  ["wang-ji-ta", "忘记他", "variety", "solo", "经典", "综艺《声生不息·港乐季》", 80],
+  ["ta-lai-ting-wo-de-yan-chang-hui", "她来听我的演唱会", "variety", "collab", "叙事", "综艺《声生不息·港乐季》", 84],
+
+  // 《剧好听的歌》
+  ["rang-ta-jiang-luo", "让她降落", "variety", "solo", "抒情", "综艺《剧好听的歌》", 80],
+  ["zui-chang-de-lv-tu", "最长的旅途", "variety", "solo", "叙事", "综艺《剧好听的歌》", 79],
+  ["ai-de-hui-gui-xian", "爱的回归线", "variety", "collab", "抒情", "综艺《剧好听的歌》", 81],
+  ["xuan-cao-hua", "萱草花", "variety", "solo", "治愈", "综艺《剧好听的歌》", 82],
+  ["wo-yao-ni", "我要你", "variety", "solo", "抒情", "综艺《剧好听的歌》", 78],
+  ["dian-qi-jiao-jian-ai", "踮起脚尖爱", "variety", "solo", "抒情", "综艺《剧好听的歌》", 83],
+
+  // 《音乐缘计划》与《国乐无双》
+  ["tai-yang-gong-zhu", "太阳公主", "variety", "solo", "明亮", "综艺《音乐缘计划》", 78],
+  ["ming-zhi-gu-wen", "明知故问", "variety", "solo", "情绪", "综艺《音乐缘计划》", 80],
+  ["let-me-go", "Let Me Go", "variety", "solo", "R&B", "综艺《音乐缘计划》", 77],
+  ["gan-lan-shu", "橄榄树", "variety", "solo", "经典", "综艺《国乐无双》", 76],
+
   ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "live", "solo", "经典", "电影《一秒钟》· 推广曲", 74]
 ];
 
@@ -89,6 +181,9 @@ const SOURCE_META = {
   single: { label: "单曲", colors: ["#9d174d", "#f472b6"] },
   ost: { label: "OST", colors: ["#1d4ed8", "#8b5cf6"] },
   live: { label: "Live", colors: ["#7c2d12", "#f97316"] },
+  soloWork: { label: "独唱", colors: ["#527d70", "#9cc7b8"] },
+  collabWork: { label: "合唱", colors: ["#9a6f82", "#d6a9bd"] },
+  variety: { label: "综艺", colors: ["#836d42", "#d5bd78"] },
   other: { label: "其他", colors: ["#0f766e", "#22d3ee"] }
 };
 

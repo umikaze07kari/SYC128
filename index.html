@@ -28,7 +28,7 @@
         <div class="hero-copy">
           <p class="eyebrow">DAN ISLAND · SONG EXPEDITION</p>
           <h1>在一座会唱歌的岛上，<span>找到你的岛主。</span></h1>
-          <p>69 首歌，六段巡游。先 4 选 1 快速登岛，再经历潮汐复活、双歌对决与岛主议会。</p>
+          <p>140 首歌，六段巡游。先 4 选 1 快速登岛，再经历潮汐复活、双歌对决与岛主议会。</p>
           <div class="hero-actions">
             <button class="primary-button" id="startJourney" type="button">开始登岛 <span>↗</span></button>
             <button class="soft-button" id="continueJourney" type="button" hidden>继续上次巡游</button>
@@ -36,13 +36,13 @@
         </div>
         <div class="island-art">
           <img src="assets/island.svg" alt="长着巨树的绿色蛋岛">
-          <span class="island-note note-one">69 首入岛</span>
-          <span class="island-note note-two">约 34 次决策</span>
+          <span class="island-note note-one">140 首入岛</span>
+          <span class="island-note note-two">约 73 次选择</span>
         </div>
       </div>
 
       <div class="journey-preview" aria-label="六阶段赛制">
-        <span><b>01</b>四选一</span><i>→</i><span><b>02</b>潮汐复活</span><i>→</i><span><b>03</b>二十进十</span><i>→</i><span><b>04</b>十进五</span><i>→</i><span><b>05</b>五选二</span><i>→</i><span><b>06</b>岛主决选</span>
+        <span><b>01</b>海选复活</span><i>→</i><span><b>02</b>四十进二十</span><i>→</i><span><b>03</b>二十进十</span><i>→</i><span><b>04</b>十进五</span><i>→</i><span><b>05</b>五选二</span><i>→</i><span><b>06</b>岛主决选</span>
       </div>
     </section>
 
@@ -50,7 +50,7 @@
       <div class="stage-bar">
         <button class="back-button" id="pauseJourney" type="button" aria-label="暂停">×</button>
         <div><p id="stageEnglish">LANDING ROUND</p><strong id="stageTitle">登岛海选 · 四选一</strong></div>
-        <span id="stageCounter">1 / 17</span>
+        <span id="stageCounter">1 / 34</span>
       </div>
       <div class="round-progress"><span id="roundProgress"></span></div>
 
@@ -68,7 +68,7 @@
       <div class="selection-head">
         <p class="eyebrow" id="selectionEyebrow">TIDAL REVIVAL</p>
         <h2 id="selectionTitle">潮水送回一些遗珠</h2>
-        <p id="selectionCopy">从离岛歌曲中选回 <b id="selectionNeed">2</b> 首，凑齐二十强。</p>
+        <p id="selectionCopy">从离岛歌曲中选回 <b id="selectionNeed">2</b> 首，补足四十强。</p>
         <span class="selection-count" id="selectionCount">0 / 2</span>
       </div>
       <div class="selection-grid" id="selectionGrid"></div>
@@ -78,7 +78,7 @@
     <section class="view checkpoint-view" id="checkpointView">
       <div class="checkpoint-head">
         <span id="checkpointKicker">STAGE CLEAR</span>
-        <h2 id="checkpointTitle">二十座音乐岛已经亮起</h2>
+        <h2 id="checkpointTitle">四十首歌进入环岛航线</h2>
         <p id="checkpointCopy">巡游路线已更新，下一站继续缩小范围。</p>
       </div>
       <div class="route-card">
@@ -99,7 +99,7 @@
       </div>
 
       <div class="route-card final-route-card">
-        <div class="route-card-head"><b>完整六段巡游图</b><small>69 首 → 唯一岛主</small></div>
+        <div class="route-card-head"><b>完整六段巡游图</b><small>140 首 → 唯一岛主</small></div>
         <div class="island-route" id="finalRoute"></div>
       </div>
 
@@ -115,10 +115,10 @@
     <p class="eyebrow">ISLAND RULES</p>
     <h2>六段巡游，不走传统淘汰树</h2>
     <ol>
-      <li><b>登岛海选：</b>68 首分成 17 组四选一，1 号种子直达岛心。</li>
+      <li><b>登岛海选：</b>4 首种子直达岛心，其余 136 首分成 34 组四选一。</li>
       <li><b>种子分散：</b>专辑曲轻量加权，同专辑与高种子尽量拆组，组序随机打散。</li>
-      <li><b>潮汐复活：</b>从离岛歌曲中补足二十强。</li>
-      <li><b>双歌对决：</b>20→10、10→5，逐渐收紧偏爱。</li>
+      <li><b>潮汐复活：</b>从离岛歌曲中补足四十强。</li>
+      <li><b>双歌对决：</b>40→20、20→10、10→5，逐渐收紧偏爱。</li>
       <li><b>岛主议会：</b>五强同场，选择两首进入最终决选。</li>
       <li><b>岛主决选：</b>最后一次二选一。</li>
     </ol>

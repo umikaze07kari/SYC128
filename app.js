@@ -2,10 +2,12 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "pure-island-journey-v5";
+  const STORAGE_KEY = "pure-island-journey-v6";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
-  const STAGE_COUNTS = [18, 20, 10, 5, 2, 1];
-  const STAGE_LABELS = ["登岛", "复活20", "十强", "五强", "决赛", "岛主"];
+  const LANDING_GROUP_SIZE = 4;
+  const FIRST_STAGE_TARGET = 40;
+  const STAGE_COUNTS = [40, 20, 10, 5, 2, 1];
+  const STAGE_LABELS = ["入围40", "二十强", "十强", "五强", "决赛", "岛主"];
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -86,8 +88,10 @@
 
   function makeLandingGroups(pool) {
     const ranked = [...pool].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
-    const directSeed = ranked.shift();
-    const seeds = ranked.splice(0, 17);
+    const directCount = pool.length % LANDING_GROUP_SIZE || LANDING_GROUP_SIZE;
+    const directSeeds = ranked.splice(0, directCount);
+    const groupCount = (pool.length - directCount) / LANDING_GROUP_SIZE;
+    const seeds = ranked.splice(0, groupCount);
     const groups = seeds.map((seed) => [seed.id]);
     const remaining = [...ranked].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
 
@@ -105,7 +109,7 @@
       });
     }
 
-    return { directSeed: directSeed.id, groups: shuffled(groups).map((group) => shuffled(group)) };
+    return { directSeeds: directSeeds.map((song) => song.id), groups: shuffled(groups).map((group) => shuffled(group)) };
   }
 
   function makeDuelPairs(ids) {
@@ -123,12 +127,12 @@
   }
 
   function freshState() {
-    const { directSeed, groups } = makeLandingGroups(songs);
+    const { directSeeds, groups } = makeLandingGroups(songs);
     return {
-      version: 5,
+      version: 6,
       createdAt: new Date().toISOString(),
       phase: "landing",
-      directSeed,
+      directSeeds,
       groups,
       groupIndex: 0,
       groupWinners: [],
@@ -139,6 +143,7 @@
       selection: [],
       selectionMode: null,
       revivalSlots: 0,
+      top40: [],
       top20: [],
       top10: [],
       top5: [],
@@ -155,7 +160,7 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 5 ? saved : null;
+      return saved?.version === 6 ? saved : null;
     } catch {
       return null;
     }
@@ -224,8 +229,8 @@
       renderLanding();
       return;
     }
-    const landing = [state.directSeed, ...state.groupWinners];
-    state.revivalSlots = 20 - landing.length;
+    const landing = [...state.directSeeds, ...state.groupWinners];
+    state.revivalSlots = FIRST_STAGE_TARGET - landing.length;
     state.selection = [];
     state.selectionMode = "revival";
     state.phase = "revival";
@@ -236,9 +241,10 @@
   function renderDuel() {
     const pair = state.duelPairs[state.duelIndex].map(byId);
     const isFinal = state.phase === "final";
+    const isTop40 = state.phase === "duel40";
     const isTop20 = state.phase === "duel20";
-    els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : (isTop20 ? "TIDAL DUEL" : "INNER ISLAND DUEL");
-    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : (isTop20 ? "二十进十 · 二选一" : "十进五 · 二选一");
+    els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : (isTop40 ? "COASTLINE DUEL" : (isTop20 ? "TIDAL DUEL" : "INNER ISLAND DUEL"));
+    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : (isTop40 ? "四十进二十 · 二选一" : (isTop20 ? "二十进十 · 二选一" : "十进五 · 二选一"));
     els.stageCounter.textContent = `${state.duelIndex + 1} / ${state.duelPairs.length}`;
     els.roundProgress.style.width = `${(state.duelIndex / state.duelPairs.length) * 100}%`;
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
@@ -258,7 +264,13 @@
       renderDuel();
       return;
     }
-    if (state.phase === "duel20") {
+    if (state.phase === "duel40") {
+      state.top20 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top20);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("二十座音乐岛已经亮起", "下一站二十进十，偏爱继续收紧。", "duel20");
+    } else if (state.phase === "duel20") {
       state.top10 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top10);
       state.duelIndex = 0;
@@ -296,12 +308,16 @@
     $("#selectionEyebrow").textContent = revival ? "TIDAL REVIVAL" : "ISLAND COUNCIL";
     $("#selectionTitle").textContent = revival ? "潮水送回一些遗珠" : "五强进入岛主议会";
     $("#selectionCopy").innerHTML = revival
-      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，凑齐二十强。`
+      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足四十强。`
       : `从五强中同时选出 <b id="selectionNeed">2</b> 首，进入最终决选。`;
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
-    els.selectionGrid.innerHTML = selectionCandidates().map((song) => `
+    els.selectionGrid.className = revival ? "selection-grid compact-grid" : "selection-grid";
+    els.selectionGrid.innerHTML = selectionCandidates().map((song) => revival ? `
+      <button class="select-card compact source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}" title="${song.title}">
+        <span aria-hidden="true">+</span><b>${song.title}</b>
+      </button>` : `
       <button class="select-card source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}">
         ${imageMarkup(song)}<div><b>${song.title}</b><small>${song.release}</small></div>
       </button>`).join("");
@@ -321,11 +337,11 @@
   function confirmSelection() {
     if (state.selection.length !== selectionLimit()) return;
     if (state.selectionMode === "revival") {
-      state.top20 = [state.directSeed, ...state.groupWinners, ...state.selection];
-      state.duelPairs = makeDuelPairs(state.top20);
+      state.top40 = [...state.directSeeds, ...state.groupWinners, ...state.selection];
+      state.duelPairs = makeDuelPairs(state.top40);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("二十座音乐岛已经亮起", "离开海选区，下一站开始双歌对决。", "duel20");
+      setCheckpoint("四十首歌进入环岛航线", "海选与复活完成，下一站开始双歌对决。", "duel40");
     } else {
       state.finalists = [...state.selection];
       state.duelPairs = [[...state.finalists]];
@@ -345,7 +361,7 @@
 
   function routeData() {
     return [
-      [state.directSeed, ...state.groupWinners],
+      state.top40,
       state.top20,
       state.top10,
       state.top5,
@@ -390,7 +406,7 @@
   function renderCurrent() {
     if (!state) return showView("home");
     if (state.phase === "landing") renderLanding();
-    else if (["duel20", "duel10", "final"].includes(state.phase)) renderDuel();
+    else if (["duel40", "duel20", "duel10", "final"].includes(state.phase)) renderDuel();
     else if (["revival", "council"].includes(state.phase)) renderSelection();
     else if (state.phase === "checkpoint") renderCheckpoint();
     else if (state.phase === "complete") renderResult();
