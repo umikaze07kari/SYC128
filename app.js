@@ -2,7 +2,7 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v8";
+  const STORAGE_KEY = "dan-island-odyssey-v9";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
   const OPTIONAL_COLLECTIONS = [
@@ -20,6 +20,12 @@
     { key: "chinaMusic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
   ];
   const DEFAULT_COLLECTIONS = ["ost", "singer2025", "voice2020"];
+  const ROUND_LABELS = {
+    duel40: "四十进二十",
+    duel20: "二十进十",
+    duel10: "十进五",
+    final: "岛主决选"
+  };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -133,12 +139,6 @@
     return size >= 64 ? 40 : 20;
   }
 
-  function routeSpec() {
-    return state.firstStageTarget === 40
-      ? { counts: [40, 20, 10, 5, 2, 1], labels: ["启航40", "潮汐20", "回声10", "密林5", "营地2", "岛主"] }
-      : { counts: [20, 10, 5, 2, 1], labels: ["启航20", "回声10", "密林5", "营地2", "岛主"] };
-  }
-
   function readJourneyConfig() {
     return {
       includeCollabs: $('input[name="vocalScope"]:checked')?.value !== "solo",
@@ -186,7 +186,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 8,
+      version: 9,
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -200,6 +200,7 @@
       duelPairs: [],
       duelIndex: 0,
       duelWinners: [],
+      bracketRounds: [],
       selection: [],
       selectionMode: null,
       revivalSlots: 0,
@@ -221,7 +222,7 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 8 ? saved : null;
+      return saved?.version === 9 ? saved : null;
     } catch {
       return null;
     }
@@ -357,6 +358,11 @@
       renderDuel();
       return;
     }
+    state.bracketRounds.push({
+      phase: state.phase,
+      label: ROUND_LABELS[state.phase],
+      matches: state.duelPairs.map((pair, index) => ({ songs: [...pair], winner: state.duelWinners[index] }))
+    });
     if (state.phase === "duel40") {
       state.top20 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top20);
@@ -462,28 +468,60 @@
     state.checkpoint = { title, copy, nextPhase, undoable };
   }
 
-  function routeData() {
-    const finalStages = [state.top20, state.top10, state.top5, state.finalists, state.champion ? [state.champion] : []];
-    return state.firstStageTarget === 40 ? [state.top40, ...finalStages] : finalStages;
+  function pendingRound() {
+    const phase = state.checkpoint?.nextPhase;
+    return {
+      phase,
+      label: phase === "final" ? "岛主决选 · 待揭晓" : `${state.firstStageTarget} 强首轮对阵`,
+      matches: state.duelPairs.map((pair) => ({ songs: [...pair], winner: null })),
+      pending: true
+    };
   }
 
-  function renderRoute(container) {
-    const data = routeData();
-    const { counts, labels } = routeSpec();
-    container.style.setProperty("--route-columns", data.length);
-    container.dataset.columns = String(data.length);
-    container.innerHTML = data.map((ids, stageIndex) => {
-      const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
-      const splitClass = counts[stageIndex] === 40 ? " split-stage" : "";
-      return `<div class="route-stage${splitClass}"><div class="route-head">${labels[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
-    }).join("");
+  function matchMarkup(match, index) {
+    const [leftId, rightId] = match.songs;
+    const left = byId(leftId);
+    const right = byId(rightId);
+    const winner = match.winner ? byId(match.winner) : null;
+    return `<article class="match-result${winner ? " decided" : " pending"}">
+      <span class="match-number">${String(index + 1).padStart(2, "0")}</span>
+      <div class="pair-line">
+        <span class="contestant ${winner?.id === leftId ? "winner" : ""}" title="${left.title}">${left.title}</span>
+        <i>VS</i>
+        <span class="contestant ${winner?.id === rightId ? "winner" : ""}" title="${right.title}">${right.title}</span>
+      </div>
+      <div class="advance-line"><small>${winner ? "晋级" : "待选择"}</small><b>${winner ? winner.title : "—"}</b><span>→</span></div>
+    </article>`;
+  }
+
+  function renderRoute(container, rounds, full = false) {
+    const pages = rounds.flatMap((round) => {
+      const pageCount = Math.ceil(round.matches.length / 10);
+      return Array.from({ length: pageCount }, (_, pageIndex) => ({
+        ...round,
+        matches: round.matches.slice(pageIndex * 10, pageIndex * 10 + 10),
+        pageIndex,
+        pageCount
+      }));
+    });
+    container.className = `island-route duel-route${full ? " full-bracket" : ""}`;
+    container.removeAttribute("data-columns");
+    container.innerHTML = `<div class="duel-rounds">${pages.map((round) => `
+      <section class="bracket-round">
+        <div class="bracket-round-head"><b>${round.label}${round.pageCount > 1 ? ` · ${round.pageIndex + 1}/${round.pageCount}` : ""}</b><small>${round.matches.length} 组 · 二进一</small></div>
+        <div class="match-grid">${round.matches.map(matchMarkup).join("")}</div>
+      </section>`).join("")}</div>`;
   }
 
   function renderCheckpoint() {
     $("#checkpointTitle").textContent = state.checkpoint.title;
     $("#checkpointCopy").textContent = state.checkpoint.copy;
     els.checkpointUndo.hidden = !state.checkpoint.undoable;
-    renderRoute(els.checkpointRoute);
+    const showPending = state.checkpoint.nextPhase === "final" || !state.bracketRounds.length;
+    const rounds = showPending ? [pendingRound()] : [state.bracketRounds.at(-1)];
+    $("#checkpointRouteTitle").textContent = showPending ? "下一站二选一对阵" : "本轮二进一结果";
+    $("#checkpointRouteHint").textContent = showPending ? "左右两首即将正面对决 · 可横滑" : "胜出已高亮 · 可横滑";
+    renderRoute(els.checkpointRoute, rounds);
     showView("checkpoint");
   }
 
@@ -500,9 +538,9 @@
     $("#winnerCover").onerror = () => { $("#winnerCover").src = FALLBACK_COVER; };
     $("#winnerTitle").textContent = winner.title;
     $("#winnerSource").textContent = winner.release;
-    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 → 唯一岛主`;
+    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 · 左右滑动查看各轮`;
     $("#resultUndo").hidden = !state.history?.length;
-    renderRoute(els.finalRoute);
+    renderRoute(els.finalRoute, state.bracketRounds, true);
     renderQrCode();
     showView("result");
     updateContinue();
@@ -634,58 +672,66 @@
 
     ctx.fillStyle = "#284332";
     ctx.font = "900 30px 'Microsoft YaHei'";
-    ctx.fillText("完整环游路线", 60, 525);
+    ctx.fillText("完整二选一轨迹", 60, 525);
     ctx.fillStyle = "#708074";
     ctx.font = "17px 'Microsoft YaHei'";
-    ctx.fillText("从四选一登岛，到最后一首歌成为岛主。", 315, 524);
+    ctx.fillText("每格记录对阵双方与晋级者 · 五强经岛主议会选出决赛席位", 330, 524);
 
-    const data = routeData();
+    const rounds = state.bracketRounds;
     const boardX = 60;
     const boardY = 565;
     const boardW = 1080;
     const boardH = 920;
-    const { counts, labels } = routeSpec();
-    const totalTracks = data.length === 6 ? 7 : data.length;
-    const trackW = boardW / totalTracks;
-    const headerH = 48;
-    const colors = data.length === 6
-      ? ["#e4f4b8", "#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"]
-      : ["#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"];
-    let trackIndex = 0;
-    data.forEach((ids, stageIndex) => {
-      const splitStage = counts[stageIndex] === 40;
-      const stageTracks = splitStage ? 2 : 1;
-      const x = boardX + trackIndex * trackW;
-      const stageW = trackW * stageTracks;
-      ctx.fillStyle = colors[stageIndex];
-      ctx.fillRect(x, boardY, stageW, headerH);
-      ctx.strokeStyle = "rgba(45,67,49,.26)";
-      ctx.strokeRect(x, boardY, stageW, headerH);
+    const headerH = 46;
+    const columnGap = 12;
+    const columnW = (boardW - columnGap * Math.max(0, rounds.length - 1)) / Math.max(1, rounds.length);
+    const colors = ["#e4f4b8", "#cceec0", "#d6d0f4", "#f4ef99"];
+    rounds.forEach((round, roundIndex) => {
+      const x = boardX + roundIndex * (columnW + columnGap);
+      ctx.fillStyle = colors[roundIndex] || "#ece8fb";
+      ctx.fillRect(x, boardY, columnW, headerH);
+      ctx.strokeStyle = "rgba(45,67,49,.22)";
+      ctx.strokeRect(x, boardY, columnW, headerH);
       ctx.fillStyle = "#213025";
       ctx.textAlign = "center";
       ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(labels[stageIndex], x + stageW / 2, boardY + 31);
-      const visibleRows = splitStage ? Math.ceil(counts[stageIndex] / 2) : counts[stageIndex];
-      const rowH = (boardH - headerH) / visibleRows;
-      const itemW = splitStage ? stageW / 2 : stageW;
-      const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
-      padded.forEach((id, rowIndex) => {
-        const itemColumn = splitStage ? rowIndex % 2 : 0;
-        const itemRow = splitStage ? Math.floor(rowIndex / 2) : rowIndex;
-        const itemX = x + itemColumn * itemW;
-        const y = boardY + headerH + itemRow * rowH;
-        ctx.fillStyle = id ? "rgba(255,255,255,.82)" : "rgba(255,255,255,.35)";
-        ctx.fillRect(itemX, y, itemW, rowH);
+      ctx.fillText(round.label, x + columnW / 2, boardY + 29);
+
+      const gap = round.matches.length > 12 ? 2 : 5;
+      const availableH = boardH - headerH - 12;
+      const maxMatchH = round.phase === "final" ? 116 : (round.matches.length <= 5 ? 92 : 72);
+      const matchH = Math.min(maxMatchH, (availableH - gap * Math.max(0, round.matches.length - 1)) / Math.max(1, round.matches.length));
+      const usedH = round.matches.length * matchH + Math.max(0, round.matches.length - 1) * gap;
+      const startY = boardY + headerH + 6 + (availableH - usedH) / 2;
+      round.matches.forEach((match, matchIndex) => {
+        const y = startY + matchIndex * (matchH + gap);
+        const [leftId, rightId] = match.songs;
+        const left = byId(leftId);
+        const right = byId(rightId);
+        const advanced = byId(match.winner);
+        ctx.fillStyle = "rgba(255,255,255,.88)";
+        ctx.fillRect(x, y, columnW, matchH);
         ctx.strokeStyle = "rgba(45,67,49,.16)";
-        ctx.strokeRect(itemX, y, itemW, rowH);
-        if (id) {
-          const size = data.length === 6 ? [11, 11, 15, 20, 27, 35][stageIndex] : [12, 16, 21, 29, 36][stageIndex];
-          ctx.fillStyle = "#213025";
-          ctx.font = `800 ${size}px 'Microsoft YaHei'`;
-          ctx.fillText(fitText(ctx, byId(id).title, itemW - 12), itemX + itemW / 2, y + rowH / 2 + size * .35);
-        }
+        ctx.strokeRect(x, y, columnW, matchH);
+        const compact = matchH < 50;
+        const pairSize = compact ? 10 : 13;
+        const resultSize = compact ? 11 : 16;
+        ctx.fillStyle = "#68716a";
+        ctx.font = `750 ${pairSize}px 'Microsoft YaHei'`;
+        const half = (columnW - 34) / 2;
+        ctx.fillText(fitText(ctx, left.title, half), x + half / 2 + 6, y + matchH * .35);
+        ctx.fillStyle = "#8d80ba";
+        ctx.font = `900 ${compact ? 8 : 10}px Arial`;
+        ctx.fillText("VS", x + columnW / 2, y + matchH * .35);
+        ctx.fillStyle = "#68716a";
+        ctx.font = `750 ${pairSize}px 'Microsoft YaHei'`;
+        ctx.fillText(fitText(ctx, right.title, half), x + columnW - half / 2 - 6, y + matchH * .35);
+        ctx.fillStyle = "#e6f1d5";
+        ctx.fillRect(x + 1, y + matchH * .52, columnW - 2, matchH * .48 - 1);
+        ctx.fillStyle = "#3f593f";
+        ctx.font = `900 ${resultSize}px 'Microsoft YaHei'`;
+        ctx.fillText(`✓ ${fitText(ctx, advanced.title, columnW - 28)}`, x + columnW / 2, y + matchH * .84);
       });
-      trackIndex += stageTracks;
     });
     drawQrCode(ctx, createJourneyQr(), 950, 1520, 165);
     ctx.textAlign = "left";
