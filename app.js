@@ -2,7 +2,7 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v7";
+  const STORAGE_KEY = "dan-island-odyssey-v8";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
   const OPTIONAL_COLLECTIONS = [
@@ -19,6 +19,7 @@
     { key: "musicPlan", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
     { key: "chinaMusic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
   ];
+  const DEFAULT_COLLECTIONS = ["ost", "singer2025", "voice2020"];
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -129,7 +130,7 @@
   }
 
   function firstStageTargetFor(size) {
-    return size >= 96 ? 40 : 20;
+    return size >= 64 ? 40 : 20;
   }
 
   function routeSpec() {
@@ -155,7 +156,7 @@
   }
 
   function renderJourneyConfig(config = null) {
-    const enabled = new Set(config?.collections || OPTIONAL_COLLECTIONS.map((collection) => collection.key));
+    const enabled = new Set(config?.collections || DEFAULT_COLLECTIONS);
     els.collectionToggles.innerHTML = OPTIONAL_COLLECTIONS.map((collection) => `
       <label class="collection-switch"><input type="checkbox" value="${collection.key}" ${enabled.has(collection.key) ? "checked" : ""}><span>${collection.label}</span></label>`).join("");
     const vocal = config?.includeCollabs === false ? "solo" : "all";
@@ -185,7 +186,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 7,
+      version: 8,
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -220,7 +221,7 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 7 ? saved : null;
+      return saved?.version === 8 ? saved : null;
     } catch {
       return null;
     }
@@ -473,7 +474,8 @@
     container.dataset.columns = String(data.length);
     container.innerHTML = data.map((ids, stageIndex) => {
       const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
-      return `<div class="route-stage"><div class="route-head">${labels[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
+      const splitClass = counts[stageIndex] === 40 ? " split-stage" : "";
+      return `<div class="route-stage${splitClass}"><div class="route-head">${labels[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
     }).join("");
   }
 
@@ -580,7 +582,7 @@
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
     const W = 1200;
-    const H = 2000;
+    const H = 1750;
     canvas.width = W;
     canvas.height = H;
     const winner = byId(state.champion);
@@ -600,89 +602,100 @@
     ctx.font = "18px 'Microsoft YaHei'";
     ctx.fillText("蛋岛环游记 / 我的唯一岛主", 60, 105);
 
-    const hero = ctx.createLinearGradient(60, 150, 1140, 570);
+    const hero = ctx.createLinearGradient(60, 130, 1140, 475);
     hero.addColorStop(0, "#284332");
     hero.addColorStop(.6, "#557c45");
     hero.addColorStop(1, "#665394");
-    roundRect(ctx, 60, 145, 1080, 450, 42);
+    roundRect(ctx, 60, 130, 1080, 345, 42);
     ctx.fillStyle = hero;
     ctx.fill();
     if (island) {
-      ctx.save(); ctx.globalAlpha = .22; ctx.drawImage(island, 680, 150, 500, 430); ctx.restore();
+      ctx.save(); ctx.globalAlpha = .2; ctx.drawImage(island, 730, 105, 430, 370); ctx.restore();
     }
     ctx.fillStyle = "#f4ef99";
     ctx.font = "900 17px Arial";
-    ctx.fillText("OWNER OF DAN ISLAND", 115, 220);
+    ctx.fillText("OWNER OF DAN ISLAND", 115, 190);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "22px 'Microsoft YaHei'";
-    ctx.fillText("我的蛋岛岛主是", 115, 270);
+    ctx.fillText("我的蛋岛岛主是", 115, 238);
     ctx.fillStyle = "#fff";
     ctx.font = "900 62px 'Microsoft YaHei'";
-    ctx.fillText(fitText(ctx, winner.title, 600), 115, 365);
+    ctx.fillText(fitText(ctx, winner.title, 600), 115, 325);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "20px 'Microsoft YaHei'";
-    ctx.fillText(fitText(ctx, winner.release, 600), 118, 415);
+    ctx.fillText(fitText(ctx, winner.release, 600), 118, 375);
     if (cover) {
       ctx.save();
-      roundRect(ctx, 850, 210, 220, 220, 35);
+      roundRect(ctx, 865, 178, 205, 205, 35);
       ctx.clip();
-      ctx.drawImage(cover, 850, 210, 220, 220);
+      ctx.drawImage(cover, 865, 178, 205, 205);
       ctx.restore();
     }
 
     ctx.fillStyle = "#284332";
     ctx.font = "900 30px 'Microsoft YaHei'";
-    ctx.fillText("完整环游路线", 60, 670);
+    ctx.fillText("完整环游路线", 60, 525);
     ctx.fillStyle = "#708074";
     ctx.font = "17px 'Microsoft YaHei'";
-    ctx.fillText("从四选一登岛，到最后一首歌成为岛主。", 315, 669);
+    ctx.fillText("从四选一登岛，到最后一首歌成为岛主。", 315, 524);
 
     const data = routeData();
     const boardX = 60;
-    const boardY = 720;
+    const boardY = 565;
     const boardW = 1080;
-    const boardH = 1110;
+    const boardH = 920;
     const { counts, labels } = routeSpec();
-    const colW = boardW / data.length;
+    const totalTracks = data.length === 6 ? 7 : data.length;
+    const trackW = boardW / totalTracks;
     const headerH = 48;
     const colors = data.length === 6
       ? ["#e4f4b8", "#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"]
       : ["#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"];
+    let trackIndex = 0;
     data.forEach((ids, stageIndex) => {
-      const x = boardX + stageIndex * colW;
+      const splitStage = counts[stageIndex] === 40;
+      const stageTracks = splitStage ? 2 : 1;
+      const x = boardX + trackIndex * trackW;
+      const stageW = trackW * stageTracks;
       ctx.fillStyle = colors[stageIndex];
-      ctx.fillRect(x, boardY, colW, headerH);
+      ctx.fillRect(x, boardY, stageW, headerH);
       ctx.strokeStyle = "rgba(45,67,49,.26)";
-      ctx.strokeRect(x, boardY, colW, headerH);
+      ctx.strokeRect(x, boardY, stageW, headerH);
       ctx.fillStyle = "#213025";
       ctx.textAlign = "center";
       ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(labels[stageIndex], x + colW / 2, boardY + 31);
-      const rowH = (boardH - headerH) / counts[stageIndex];
+      ctx.fillText(labels[stageIndex], x + stageW / 2, boardY + 31);
+      const visibleRows = splitStage ? Math.ceil(counts[stageIndex] / 2) : counts[stageIndex];
+      const rowH = (boardH - headerH) / visibleRows;
+      const itemW = splitStage ? stageW / 2 : stageW;
       const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
       padded.forEach((id, rowIndex) => {
-        const y = boardY + headerH + rowIndex * rowH;
+        const itemColumn = splitStage ? rowIndex % 2 : 0;
+        const itemRow = splitStage ? Math.floor(rowIndex / 2) : rowIndex;
+        const itemX = x + itemColumn * itemW;
+        const y = boardY + headerH + itemRow * rowH;
         ctx.fillStyle = id ? "rgba(255,255,255,.82)" : "rgba(255,255,255,.35)";
-        ctx.fillRect(x, y, colW, rowH);
+        ctx.fillRect(itemX, y, itemW, rowH);
         ctx.strokeStyle = "rgba(45,67,49,.16)";
-        ctx.strokeRect(x, y, colW, rowH);
+        ctx.strokeRect(itemX, y, itemW, rowH);
         if (id) {
           const size = data.length === 6 ? [11, 11, 15, 20, 27, 35][stageIndex] : [12, 16, 21, 29, 36][stageIndex];
           ctx.fillStyle = "#213025";
           ctx.font = `800 ${size}px 'Microsoft YaHei'`;
-          ctx.fillText(fitText(ctx, byId(id).title, colW - 12), x + colW / 2, y + rowH / 2 + size * .35);
+          ctx.fillText(fitText(ctx, byId(id).title, itemW - 12), itemX + itemW / 2, y + rowH / 2 + size * .35);
         }
       });
+      trackIndex += stageTracks;
     });
-    drawQrCode(ctx, createJourneyQr(), 958, 1848, 150);
+    drawQrCode(ctx, createJourneyQr(), 950, 1520, 165);
     ctx.textAlign = "left";
     ctx.fillStyle = "#284332";
     ctx.font = "900 20px 'Microsoft YaHei'";
-    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 60, 1885);
+    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 60, 1565);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
-    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 60, 1922);
-    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 60, 1954);
+    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 60, 1604);
+    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 60, 1640);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
   }
