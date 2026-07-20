@@ -18,7 +18,7 @@ SONGS_JS = ROOT / "songs.js"
 OUT = ROOT / "assets" / "covers"
 OUT.mkdir(parents=True, exist_ok=True)
 
-ROW = re.compile(r'^\s*\["([^"]+)",\s*"([^"]+)",\s*"(album|single|ost|live|soloWork|collabWork|variety|other)"', re.M)
+ROW = re.compile(r'^\s*\["([^"]+)",\s*"([^"]+)",\s*"(album|single|ost|live|variety|other)"', re.M)
 
 
 def load_songs() -> list[tuple[str, str, str]]:
@@ -40,7 +40,7 @@ def artwork_for(title: str, source: str) -> tuple[str | None, dict | None]:
     params = urllib.parse.urlencode({"term": term, "country": "CN", "media": "music", "entity": "song", "limit": 20})
     request = urllib.request.Request(
         f"https://itunes.apple.com/search?{params}",
-        headers={"User-Agent": "PURE-PICK-Cover-Fetcher/1.0"},
+        headers={"User-Agent": "Dan-Island-Odyssey-Cover-Fetcher/1.0"},
     )
     with urllib.request.urlopen(request, timeout=20) as response:
         payload = json.load(response)

@@ -1,7 +1,7 @@
 {
-  "name": "PURE ISLAND · 蛋岛选歌巡游",
-  "short_name": "PURE ISLAND",
-  "description": "用六段蛋岛音乐巡游，从 140 首歌里选出你的唯一岛主。",
+  "name": "蛋岛环游记 · 单依纯歌曲探险",
+  "short_name": "蛋岛环游记",
+  "description": "自由选择曲库范围，沿蛋岛地图选出你的唯一岛主。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

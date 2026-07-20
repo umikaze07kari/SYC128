@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#557c45">
-  <meta name="description" content="登上蛋岛，用六段音乐巡游选出你的单依纯本命歌曲。">
-  <title>PURE ISLAND · 蛋岛选歌巡游</title>
+  <meta name="description" content="开启蛋岛环游记，用一场音乐探险选出你的单依纯本命歌曲。">
+  <title>蛋岛环游记 · 单依纯歌曲探险</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -16,8 +16,8 @@
 
   <header class="topbar">
     <button class="brand" type="button" data-home aria-label="回到首页">
-      <span class="brand-egg">P</span>
-      <span><b>PURE ISLAND</b><small>蛋岛偏爱巡游</small></span>
+      <span class="brand-egg">蛋</span>
+      <span><b>蛋岛环游记</b><small>DAN ISLAND ODYSSEY</small></span>
     </button>
     <button class="round-icon" id="openAbout" type="button" aria-label="查看赛制">?</button>
   </header>
@@ -26,12 +26,25 @@
     <section class="view active home-view" id="homeView">
       <div class="island-hero">
         <div class="hero-copy">
-          <p class="eyebrow">DAN ISLAND · SONG EXPEDITION</p>
-          <h1>在一座会唱歌的岛上，<span>找到你的岛主。</span></h1>
-          <p>140 首歌，六段巡游。先 4 选 1 快速登岛，再经历潮汐复活、双歌对决与岛主议会。</p>
+          <p class="eyebrow">DAN ISLAND · MUSIC ODYSSEY</p>
+          <h1>沿着音乐地图，<span>寻找你的岛主。</span></h1>
+          <p>专辑与个人单曲必带，影视原声及每档综艺都可以自由开关。</p>
+
+          <section class="launch-config" aria-labelledby="rangeTitle">
+            <div class="config-heading"><span>01 / 出发准备</span><b id="rangeTitle">选择本次环游范围</b><em id="selectedSongCount">140 首</em></div>
+            <div class="core-picks" aria-label="固定收录范围"><span>✓ 专辑曲 · 必选</span><span>✓ 个人单曲 · 必选</span></div>
+            <fieldset class="vocal-scope">
+              <legend>演唱形式</legend>
+              <label><input type="radio" name="vocalScope" value="solo"><span>仅保留独唱</span></label>
+              <label><input type="radio" name="vocalScope" value="all" checked><span>包含合唱</span></label>
+            </fieldset>
+            <div class="config-subhead"><b>可选岛屿</b><span>默认全部开启</span></div>
+            <div class="collection-toggles" id="collectionToggles"></div>
+          </section>
+
           <div class="hero-actions">
-            <button class="primary-button" id="startJourney" type="button">开始登岛 <span>↗</span></button>
-            <button class="soft-button" id="continueJourney" type="button" hidden>继续上次巡游</button>
+            <button class="primary-button" id="startJourney" type="button">启程环游 <span>↗</span></button>
+            <button class="soft-button" id="continueJourney" type="button" hidden>继续上次环游</button>
           </div>
         </div>
         <div class="island-art">
@@ -41,14 +54,20 @@
         </div>
       </div>
 
-      <div class="journey-preview" aria-label="六阶段赛制">
-        <span><b>01</b>海选复活</span><i>→</i><span><b>02</b>四十进二十</span><i>→</i><span><b>03</b>二十进十</span><i>→</i><span><b>04</b>十进五</span><i>→</i><span><b>05</b>五选二</span><i>→</i><span><b>06</b>岛主决选</span>
+      <div class="expedition-map" aria-label="蛋岛六处探险地标">
+        <svg viewBox="0 0 600 170" preserveAspectRatio="none" aria-hidden="true"><path d="M28 116 C92 116 92 48 151 48 S214 124 273 120 S334 43 393 48 S455 126 513 112 S555 52 577 48"/></svg>
+        <div class="map-stop stop-1"><i>⛵</i><b>启航湾</b><small>海选复活</small></div>
+        <div class="map-stop stop-2"><i>🌊</i><b>潮汐滩</b><small>四十进二十</small></div>
+        <div class="map-stop stop-3"><i>🪨</i><b>回声礁</b><small>二十进十</small></div>
+        <div class="map-stop stop-4"><i>🌲</i><b>萤光林</b><small>十进五</small></div>
+        <div class="map-stop stop-5"><i>⛺</i><b>岛心营地</b><small>五选二</small></div>
+        <div class="map-stop stop-6"><i>🥚</i><b>岛主峰</b><small>最终决选</small></div>
       </div>
     </section>
 
     <section class="view battle-view" id="battleView">
       <div class="stage-bar">
-        <button class="back-button" id="pauseJourney" type="button" aria-label="暂停">×</button>
+        <div class="stage-actions"><button class="back-button" id="pauseJourney" type="button" aria-label="暂停">×</button><button class="back-button undo-button" id="undoChoice" type="button" aria-label="撤回上次选择" title="撤回上次选择">↶</button></div>
         <div><p id="stageEnglish">LANDING ROUND</p><strong id="stageTitle">登岛海选 · 四选一</strong></div>
         <span id="stageCounter">1 / 34</span>
       </div>
@@ -82,10 +101,10 @@
         <p id="checkpointCopy">巡游路线已更新，下一站继续缩小范围。</p>
       </div>
       <div class="route-card">
-        <div class="route-card-head"><b>当前六段巡游图</b><small>越往右，偏爱越清晰</small></div>
+        <div class="route-card-head"><b>当前环游路线</b><small>越往右，偏爱越清晰</small></div>
         <div class="island-route" id="checkpointRoute"></div>
       </div>
-      <button class="primary-button checkpoint-continue" id="continueStage" type="button">前往下一站 <span>→</span></button>
+      <div class="checkpoint-actions"><button class="soft-button" id="checkpointUndo" type="button">↶ 撤回刚才选择</button><button class="primary-button checkpoint-continue" id="continueStage" type="button">前往下一站 <span>→</span></button></div>
     </section>
 
     <section class="view result-view" id="resultView">
@@ -99,26 +118,34 @@
       </div>
 
       <div class="route-card final-route-card">
-        <div class="route-card-head"><b>完整六段巡游图</b><small>140 首 → 唯一岛主</small></div>
+        <div class="route-card-head"><b>完整环游路线</b><small id="resultPoolCount">140 首 → 唯一岛主</small></div>
         <div class="island-route" id="finalRoute"></div>
       </div>
 
       <div class="result-actions">
-        <button class="primary-button" id="makePoster" type="button">生成蛋岛长图 <span>↗</span></button>
-        <button class="soft-button" id="restartJourney" type="button">重新巡游</button>
+        <button class="primary-button" id="makePoster" type="button">保存结果图片 <span>↗</span></button>
+        <button class="soft-button" id="resultUndo" type="button">↶ 撤回决选</button>
+        <button class="soft-button" id="copyJourneyLink" type="button">复制测试链接</button>
+        <button class="soft-button" id="restartJourney" type="button">再测一次</button>
       </div>
+
+      <aside class="invite-card">
+        <div class="invite-copy"><span>PASS THE MAP</span><b>把蛋岛地图递给下一位旅行者</b><p>在别人的结果图或页面上长按识别二维码，即可开始自己的环游。</p></div>
+        <div class="qr-shell" id="resultQr" aria-label="蛋岛环游记测试入口二维码"></div>
+      </aside>
     </section>
   </main>
 
   <dialog class="modal" id="aboutDialog">
     <button class="modal-close" data-close-about type="button">×</button>
     <p class="eyebrow">ISLAND RULES</p>
-    <h2>六段巡游，不走传统淘汰树</h2>
+    <h2>六处地标，一场蛋岛环游</h2>
     <ol>
-      <li><b>登岛海选：</b>4 首种子直达岛心，其余 136 首分成 34 组四选一。</li>
+      <li><b>出发配置：</b>专辑曲与个人单曲固定收录，OST 和每档综艺可以分别开关。</li>
+      <li><b>登岛海选：</b>根据本次曲目数量自动编成若干组四选一。</li>
       <li><b>种子分散：</b>专辑曲轻量加权，同专辑与高种子尽量拆组，组序随机打散。</li>
-      <li><b>潮汐复活：</b>从离岛歌曲中补足四十强。</li>
-      <li><b>双歌对决：</b>40→20、20→10、10→5，逐渐收紧偏爱。</li>
+      <li><b>潮汐复活：</b>按曲库规模补足二十强或四十强。</li>
+      <li><b>双歌对决：</b>沿地图逐站减半，直到五强抵达岛心。</li>
       <li><b>岛主议会：</b>五强同场，选择两首进入最终决选。</li>
       <li><b>岛主决选：</b>最后一次二选一。</li>
     </ol>
@@ -129,13 +156,14 @@
   <dialog class="modal poster-modal" id="posterDialog">
     <button class="modal-close" data-close-poster type="button">×</button>
     <p class="eyebrow">ISLAND POSTER</p>
-    <h2>你的蛋岛巡游长图</h2>
+    <h2>你的蛋岛环游长图</h2>
     <div class="poster-wrap"><canvas id="resultCanvas" width="1200" height="2000"></canvas></div>
     <div class="poster-actions"><button class="primary-button" id="downloadPoster" type="button">保存 PNG</button><button class="soft-button" id="sharePoster" type="button">分享</button></div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="songs.js"></script>
+  <script src="vendor/qrcode.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

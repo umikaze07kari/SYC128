@@ -82,27 +82,27 @@ const rawSongs = [
   ["guang-bo", "光波", "single", "solo", "律动", "巡演主题数字单曲", 57],
 
   // 独唱作品（《如星》已在 OST 分类中收录，不重复添加）
-  ["yong-bu-shi-lian-de-ai", "永不失联的爱（正式版）", "soloWork", "solo", "抒情", "个人独唱作品", 97],
-  ["sen-zhi-lian-ge", "森之恋歌", "soloWork", "solo", "治愈", "个人独唱作品", 91],
-  ["xing-mang", "星芒", "soloWork", "solo", "明亮", "个人独唱作品", 76],
-  ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "soloWork", "solo", "明亮", "个人独唱作品", 78],
-  ["hong-qing-ting", "红蜻蜓", "soloWork", "solo", "治愈", "个人独唱作品", 75],
-  ["qing-ren", "情人", "soloWork", "solo", "抒情", "个人独唱作品", 82],
-  ["mei-man-yi-sheng", "美满一生", "soloWork", "solo", "治愈", "个人独唱作品", 73],
-  ["chun-mei-mei-sleep", "纯寐寐", "soloWork", "solo", "氛围", "个人独唱作品", 70],
-  ["wo-zai-yi-de", "我在意的", "soloWork", "solo", "抒情", "个人独唱作品", 72],
+  ["yong-bu-shi-lian-de-ai", "永不失联的爱（正式版）", "single", "solo", "抒情", "个人单曲", 97],
+  ["sen-zhi-lian-ge", "森之恋歌", "single", "solo", "治愈", "个人单曲", 91],
+  ["xing-mang", "星芒", "single", "solo", "明亮", "个人单曲", 76],
+  ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "single", "solo", "明亮", "个人单曲", 78],
+  ["hong-qing-ting", "红蜻蜓", "single", "solo", "治愈", "个人单曲", 75],
+  ["qing-ren", "情人", "single", "solo", "抒情", "个人单曲", 82],
+  ["mei-man-yi-sheng", "美满一生", "single", "solo", "治愈", "个人单曲", 73],
+  ["chun-mei-mei-sleep", "纯寐寐", "single", "solo", "氛围", "个人单曲", 70],
+  ["wo-zai-yi-de", "我在意的", "single", "solo", "抒情", "个人单曲", 72],
 
   // 合唱作品
-  ["deng-ni-lai", "等你来", "collabWork", "collab", "明亮", "合作歌曲", 74],
-  ["piao-yang-guo-hai-lai-kan-ni", "飘洋过海来看你", "collabWork", "collab", "抒情", "合作歌曲", 84],
-  ["always-on-my-way", "always on my way", "collabWork", "collab", "R&B", "合作歌曲", 76],
-  ["sinking", "Sinking", "collabWork", "collab", "R&B", "合作歌曲", 75],
-  ["yue-liang-wu-tai", "月亮舞台", "collabWork", "collab", "氛围", "合作歌曲", 77],
-  ["wo-men-xiang-xin", "我们相信", "collabWork", "collab", "大气", "合作歌曲", 73],
-  ["jian-xin-ru-wu", "见信如晤", "collabWork", "collab", "叙事", "合作歌曲", 72],
-  ["wu-you-nian", "无忧·念", "collabWork", "collab", "国风", "合作歌曲", 70],
-  ["bu-ru-jian-yi-mian", "不如见一面", "collabWork", "collab", "抒情", "合作歌曲", 81],
-  ["wei-wan-dai-xu", "未完待续", "collabWork", "collab", "叙事", "合作歌曲", 71],
+  ["deng-ni-lai", "等你来", "single", "collab", "明亮", "个人单曲 · 合唱", 74],
+  ["piao-yang-guo-hai-lai-kan-ni", "飘洋过海来看你", "single", "collab", "抒情", "个人单曲 · 合唱", 84],
+  ["always-on-my-way", "always on my way", "single", "collab", "R&B", "个人单曲 · 合唱", 76],
+  ["sinking", "Sinking", "single", "collab", "R&B", "个人单曲 · 合唱", 75],
+  ["yue-liang-wu-tai", "月亮舞台", "single", "collab", "氛围", "个人单曲 · 合唱", 77],
+  ["wo-men-xiang-xin", "我们相信", "single", "collab", "大气", "个人单曲 · 合唱", 73],
+  ["jian-xin-ru-wu", "见信如晤", "single", "collab", "叙事", "个人单曲 · 合唱", 72],
+  ["wu-you-nian", "无忧·念", "single", "collab", "国风", "个人单曲 · 合唱", 70],
+  ["bu-ru-jian-yi-mian", "不如见一面", "single", "collab", "抒情", "个人单曲 · 合唱", 81],
+  ["wei-wan-dai-xu", "未完待续", "single", "collab", "叙事", "个人单曲 · 合唱", 71],
 
   // 综艺舞台：2020《中国好声音》
   ["xiang-feng-yi-yang", "像风一样", "variety", "solo", "抒情", "综艺《2020中国好声音》", 88],
@@ -173,7 +173,7 @@ const rawSongs = [
   ["let-me-go", "Let Me Go", "variety", "solo", "R&B", "综艺《音乐缘计划》", 77],
   ["gan-lan-shu", "橄榄树", "variety", "solo", "经典", "综艺《国乐无双》", 76],
 
-  ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "live", "solo", "经典", "电影《一秒钟》· 推广曲", 74]
+  ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "single", "solo", "经典", "个人单曲 · 电影《一秒钟》推广曲", 74]
 ];
 
 const SOURCE_META = {
@@ -181,14 +181,14 @@ const SOURCE_META = {
   single: { label: "单曲", colors: ["#9d174d", "#f472b6"] },
   ost: { label: "OST", colors: ["#1d4ed8", "#8b5cf6"] },
   live: { label: "Live", colors: ["#7c2d12", "#f97316"] },
-  soloWork: { label: "独唱", colors: ["#527d70", "#9cc7b8"] },
-  collabWork: { label: "合唱", colors: ["#9a6f82", "#d6a9bd"] },
   variety: { label: "综艺", colors: ["#836d42", "#d5bd78"] },
   other: { label: "其他", colors: ["#0f766e", "#22d3ee"] }
 };
 
 // 每首歌最多保留一个极短歌词摘录（不超过 10 个词）；其余使用原创听感提示。
-const SHORT_LYRIC_CUES = {
+// 人工歌词配置区：每首歌最终都会获得 lyricExcerpt 字段。
+// 后续只需按歌曲 id 在这里填写高光歌词；留空时页面继续使用原创听感提示。
+const HIGHLIGHT_LYRICS = {
   "xiang-ni-shi-feng-qi": "我多想是路过你的风",
   "xu-xie": "余生续写的诗",
   "xiang-yan-huo-ai-guo": "像烟火爱过",
@@ -218,7 +218,7 @@ const MOOD_CUES = {
 window.SONG_CATALOG = rawSongs.map((row, index) => {
   const [id, title, source, vocal, mood, release, seedScore] = row;
   const color = SOURCE_META[source]?.colors || SOURCE_META.other.colors;
-  const lyricCue = SHORT_LYRIC_CUES[id] || null;
+  const lyricExcerpt = HIGHLIGHT_LYRICS[id] || "";
   return {
     id,
     title,
@@ -230,8 +230,9 @@ window.SONG_CATALOG = rawSongs.map((row, index) => {
     release,
     seedScore,
     cover: `assets/covers/${id}.jpg`,
-    cardTextKind: lyricCue ? "歌词短摘" : "听感提示",
-    cardLines: lyricCue ? [lyricCue] : (MOOD_CUES[mood] || ["把注意力交给旋律", "听见属于它的独特颜色"]),
+    lyricExcerpt,
+    cardTextKind: lyricExcerpt ? "歌词短摘" : "听感提示",
+    cardLines: lyricExcerpt ? [lyricExcerpt] : (MOOD_CUES[mood] || ["把注意力交给旋律", "听见属于它的独特颜色"]),
     quote: `这一刻，我把偏爱留给《${title}》。`,
     colors: index % 2 ? color : [color[1], color[0]]
   };

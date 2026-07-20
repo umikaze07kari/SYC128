@@ -2,12 +2,23 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "pure-island-journey-v6";
+  const STORAGE_KEY = "dan-island-odyssey-v7";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
-  const FIRST_STAGE_TARGET = 40;
-  const STAGE_COUNTS = [40, 20, 10, 5, 2, 1];
-  const STAGE_LABELS = ["入围40", "二十强", "十强", "五强", "决赛", "岛主"];
+  const OPTIONAL_COLLECTIONS = [
+    { key: "ost", label: "影视原声", match: (song) => song.source === "ost" },
+    { key: "singer2025", label: "歌手2025", match: (song) => song.source === "live" },
+    { key: "voice2020", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
+    { key: "giftedVoice", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
+    { key: "praiseSong", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
+    { key: "rapListen", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
+    { key: "burstStage", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
+    { key: "ourSong", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
+    { key: "infinitySound", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
+    { key: "dramaSongs", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
+    { key: "musicPlan", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
+    { key: "chinaMusic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
+  ];
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -16,6 +27,8 @@
   const els = {
     views: $$(".view"),
     continueJourney: $("#continueJourney"),
+    collectionToggles: $("#collectionToggles"),
+    selectedSongCount: $("#selectedSongCount"),
     stageEnglish: $("#stageEnglish"),
     stageTitle: $("#stageTitle"),
     stageCounter: $("#stageCounter"),
@@ -24,16 +37,19 @@
     choiceTitle: $("#choiceTitle"),
     choiceGrid: $("#choiceGrid"),
     unfamiliarAction: $("#unfamiliarAction"),
+    undoChoice: $("#undoChoice"),
     matchNote: $("#matchNote"),
     selectionGrid: $("#selectionGrid"),
     selectionCount: $("#selectionCount"),
     selectionNeed: $("#selectionNeed"),
     confirmSelection: $("#confirmSelection"),
     checkpointRoute: $("#checkpointRoute"),
+    checkpointUndo: $("#checkpointUndo"),
     finalRoute: $("#finalRoute"),
     aboutDialog: $("#aboutDialog"),
     posterDialog: $("#posterDialog"),
     canvas: $("#resultCanvas"),
+    resultQr: $("#resultQr"),
     toast: $("#toast")
   };
 
@@ -112,6 +128,46 @@
     return { directSeeds: directSeeds.map((song) => song.id), groups: shuffled(groups).map((group) => shuffled(group)) };
   }
 
+  function firstStageTargetFor(size) {
+    return size >= 96 ? 40 : 20;
+  }
+
+  function routeSpec() {
+    return state.firstStageTarget === 40
+      ? { counts: [40, 20, 10, 5, 2, 1], labels: ["启航40", "潮汐20", "回声10", "密林5", "营地2", "岛主"] }
+      : { counts: [20, 10, 5, 2, 1], labels: ["启航20", "回声10", "密林5", "营地2", "岛主"] };
+  }
+
+  function readJourneyConfig() {
+    return {
+      includeCollabs: $('input[name="vocalScope"]:checked')?.value !== "solo",
+      collections: $$('#collectionToggles input:checked').map((input) => input.value)
+    };
+  }
+
+  function songsForConfig(config) {
+    const enabled = new Set(config.collections);
+    return songs.filter((song) => {
+      const core = song.source === "album" || song.source === "single";
+      const optional = OPTIONAL_COLLECTIONS.some((collection) => enabled.has(collection.key) && collection.match(song));
+      return (core || optional) && (config.includeCollabs || song.vocal !== "collab");
+    });
+  }
+
+  function renderJourneyConfig(config = null) {
+    const enabled = new Set(config?.collections || OPTIONAL_COLLECTIONS.map((collection) => collection.key));
+    els.collectionToggles.innerHTML = OPTIONAL_COLLECTIONS.map((collection) => `
+      <label class="collection-switch"><input type="checkbox" value="${collection.key}" ${enabled.has(collection.key) ? "checked" : ""}><span>${collection.label}</span></label>`).join("");
+    const vocal = config?.includeCollabs === false ? "solo" : "all";
+    $(`input[name="vocalScope"][value="${vocal}"]`).checked = true;
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    const count = songsForConfig(readJourneyConfig()).length;
+    els.selectedSongCount.textContent = `${count} 首`;
+  }
+
   function makeDuelPairs(ids) {
     const ranked = ids.map(byId).sort((a, b) => b.seedScore - a.seedScore);
     const upper = ranked.splice(0, ranked.length / 2);
@@ -126,11 +182,14 @@
     });
   }
 
-  function freshState() {
-    const { directSeeds, groups } = makeLandingGroups(songs);
+  function freshState(pool, config) {
+    const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 6,
+      version: 7,
       createdAt: new Date().toISOString(),
+      catalogIds: pool.map((song) => song.id),
+      config,
+      firstStageTarget: firstStageTargetFor(pool.length),
       phase: "landing",
       directSeeds,
       groups,
@@ -149,7 +208,8 @@
       top5: [],
       finalists: [],
       champion: null,
-      checkpoint: null
+      checkpoint: null,
+      history: []
     };
   }
 
@@ -160,7 +220,7 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 6 ? saved : null;
+      return saved?.version === 7 ? saved : null;
     } catch {
       return null;
     }
@@ -175,7 +235,7 @@
   function updateContinue() {
     const saved = load();
     els.continueJourney.hidden = !saved;
-    if (saved) els.continueJourney.textContent = saved.phase === "complete" ? "查看上次岛主" : "继续上次巡游";
+    if (saved) els.continueJourney.textContent = saved.phase === "complete" ? "查看上次岛主" : "继续上次环游";
   }
 
   function imageMarkup(song, className = "") {
@@ -189,7 +249,7 @@
   function choiceCard(song) {
     return `
       <button class="cover-choice source-${song.source}" type="button" data-song-id="${song.id}">
-        <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}</em></div>
+        <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}${song.vocal === "collab" ? " · 合唱" : ""}</em></div>
         <div class="choice-info">
           <h3>${song.title}</h3>
           <small>${song.release}</small>
@@ -199,9 +259,31 @@
   }
 
   function startJourney() {
-    state = freshState();
+    const config = readJourneyConfig();
+    const pool = songsForConfig(config);
+    state = freshState(pool, config);
     save();
     renderCurrent();
+  }
+
+  function pushHistory() {
+    const { history, ...snapshot } = state;
+    state.history.push(JSON.parse(JSON.stringify(snapshot)));
+    if (state.history.length > 12) state.history.shift();
+  }
+
+  function undoLastChoice() {
+    if (!state?.history?.length) return;
+    const history = [...state.history];
+    const previous = history.pop();
+    state = { ...previous, history };
+    save();
+    renderCurrent();
+    showToast("已撤回刚才的选择");
+  }
+
+  function updateUndo() {
+    els.undoChoice.disabled = !state?.history?.length;
   }
 
   function renderLanding() {
@@ -216,10 +298,12 @@
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
     els.unfamiliarAction.hidden = false;
     els.matchNote.hidden = false;
+    updateUndo();
     showView("battle");
   }
 
   function chooseLanding(winnerId) {
+    pushHistory();
     const group = state.groups[state.groupIndex];
     if (winnerId) state.groupWinners.push(winnerId);
     group.forEach((id) => { if (id !== winnerId) state.eliminated.push(id); });
@@ -230,9 +314,15 @@
       return;
     }
     const landing = [...state.directSeeds, ...state.groupWinners];
-    state.revivalSlots = FIRST_STAGE_TARGET - landing.length;
+    state.revivalSlots = state.firstStageTarget - landing.length;
     state.selection = [];
     state.selectionMode = "revival";
+    if (state.revivalSlots <= 0) {
+      launchFirstDuel(landing);
+      save();
+      renderCheckpoint();
+      return;
+    }
     state.phase = "revival";
     save();
     renderSelection();
@@ -253,10 +343,12 @@
     els.choiceGrid.innerHTML = pair.map(choiceCard).join("");
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
+    updateUndo();
     showView("battle");
   }
 
   function chooseDuel(winnerId) {
+    pushHistory();
     state.duelWinners.push(winnerId);
     state.duelIndex += 1;
     if (state.duelIndex < state.duelPairs.length) {
@@ -269,18 +361,18 @@
       state.duelPairs = makeDuelPairs(state.top20);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("二十座音乐岛已经亮起", "下一站二十进十，偏爱继续收紧。", "duel20");
+      setCheckpoint("二十座音乐岛已经亮起", "下一站二十进十，偏爱继续收紧。", "duel20", true);
     } else if (state.phase === "duel20") {
       state.top10 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top10);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("十座内岛已经升起", "接下来十进五，选择会变得更难。", "duel10");
+      setCheckpoint("十座内岛已经升起", "接下来十进五，选择会变得更难。", "duel10", true);
     } else if (state.phase === "duel10") {
       state.top5 = [...state.duelWinners];
       state.selection = [];
       state.selectionMode = "council";
-      setCheckpoint("五首歌抵达岛心", "下一站是岛主议会：五选二。", "council");
+      setCheckpoint("五首歌抵达岛心", "下一站是岛主议会：五选二。", "council", true);
     } else {
       state.champion = winnerId;
       state.phase = "complete";
@@ -308,7 +400,7 @@
     $("#selectionEyebrow").textContent = revival ? "TIDAL REVIVAL" : "ISLAND COUNCIL";
     $("#selectionTitle").textContent = revival ? "潮水送回一些遗珠" : "五强进入岛主议会";
     $("#selectionCopy").innerHTML = revival
-      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足四十强。`
+      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足${state.firstStageTarget === 40 ? "四十" : "二十"}强。`
       : `从五强中同时选出 <b id="selectionNeed">2</b> 首，进入最终决选。`;
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
@@ -337,11 +429,7 @@
   function confirmSelection() {
     if (state.selection.length !== selectionLimit()) return;
     if (state.selectionMode === "revival") {
-      state.top40 = [...state.directSeeds, ...state.groupWinners, ...state.selection];
-      state.duelPairs = makeDuelPairs(state.top40);
-      state.duelIndex = 0;
-      state.duelWinners = [];
-      setCheckpoint("四十首歌进入环岛航线", "海选与复活完成，下一站开始双歌对决。", "duel40");
+      launchFirstDuel([...state.directSeeds, ...state.groupWinners, ...state.selection]);
     } else {
       state.finalists = [...state.selection];
       state.duelPairs = [[...state.finalists]];
@@ -354,33 +442,45 @@
     renderCheckpoint();
   }
 
-  function setCheckpoint(title, copy, nextPhase) {
+  function launchFirstDuel(ids) {
+    const startsAt40 = state.firstStageTarget === 40;
+    if (startsAt40) state.top40 = [...ids];
+    else state.top20 = [...ids];
+    state.duelPairs = makeDuelPairs(ids);
+    state.duelIndex = 0;
+    state.duelWinners = [];
+    setCheckpoint(
+      `${state.firstStageTarget} 首歌进入环岛航线`,
+      "海选与复活完成，下一站开始双歌对决。",
+      startsAt40 ? "duel40" : "duel20"
+    );
+  }
+
+  function setCheckpoint(title, copy, nextPhase, undoable = false) {
     state.phase = "checkpoint";
-    state.checkpoint = { title, copy, nextPhase };
+    state.checkpoint = { title, copy, nextPhase, undoable };
   }
 
   function routeData() {
-    return [
-      state.top40,
-      state.top20,
-      state.top10,
-      state.top5,
-      state.finalists,
-      state.champion ? [state.champion] : []
-    ];
+    const finalStages = [state.top20, state.top10, state.top5, state.finalists, state.champion ? [state.champion] : []];
+    return state.firstStageTarget === 40 ? [state.top40, ...finalStages] : finalStages;
   }
 
   function renderRoute(container) {
     const data = routeData();
+    const { counts, labels } = routeSpec();
+    container.style.setProperty("--route-columns", data.length);
+    container.dataset.columns = String(data.length);
     container.innerHTML = data.map((ids, stageIndex) => {
-      const padded = [...ids, ...Array(Math.max(0, STAGE_COUNTS[stageIndex] - ids.length)).fill(null)];
-      return `<div class="route-stage"><div class="route-head">${STAGE_LABELS[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
+      const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
+      return `<div class="route-stage"><div class="route-head">${labels[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
     }).join("");
   }
 
   function renderCheckpoint() {
     $("#checkpointTitle").textContent = state.checkpoint.title;
     $("#checkpointCopy").textContent = state.checkpoint.copy;
+    els.checkpointUndo.hidden = !state.checkpoint.undoable;
     renderRoute(els.checkpointRoute);
     showView("checkpoint");
   }
@@ -398,7 +498,10 @@
     $("#winnerCover").onerror = () => { $("#winnerCover").src = FALLBACK_COVER; };
     $("#winnerTitle").textContent = winner.title;
     $("#winnerSource").textContent = winner.release;
+    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 → 唯一岛主`;
+    $("#resultUndo").hidden = !state.history?.length;
     renderRoute(els.finalRoute);
+    renderQrCode();
     showView("result");
     updateContinue();
   }
@@ -436,6 +539,43 @@
     });
   }
 
+  function journeyUrl() {
+    const url = new URL(location.href);
+    url.search = "";
+    url.hash = "";
+    return url.href;
+  }
+
+  function createJourneyQr() {
+    if (typeof window.qrcode !== "function") return null;
+    const code = window.qrcode(0, "M");
+    code.addData(journeyUrl());
+    code.make();
+    return code;
+  }
+
+  function renderQrCode() {
+    const code = createJourneyQr();
+    els.resultQr.innerHTML = code
+      ? code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+      : '<span class="qr-fallback">二维码生成失败<br>请复制测试链接</span>';
+  }
+
+  function drawQrCode(ctx, code, x, y, size) {
+    if (!code) return;
+    const modules = code.getModuleCount();
+    const quiet = 4;
+    const cell = size / (modules + quiet * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x, y, size, size);
+    ctx.fillStyle = "#26382d";
+    for (let row = 0; row < modules; row += 1) {
+      for (let col = 0; col < modules; col += 1) {
+        if (code.isDark(row, col)) ctx.fillRect(x + (col + quiet) * cell, y + (row + quiet) * cell, Math.ceil(cell), Math.ceil(cell));
+      }
+    }
+  }
+
   async function drawPoster() {
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
@@ -455,10 +595,10 @@
 
     ctx.fillStyle = "#466f45";
     ctx.font = "900 21px Arial";
-    ctx.fillText("PURE ISLAND · DAN ISLAND", 60, 70);
+    ctx.fillText("蛋岛环游记 · DAN ISLAND ODYSSEY", 60, 70);
     ctx.fillStyle = "#708074";
     ctx.font = "18px 'Microsoft YaHei'";
-    ctx.fillText("六段音乐巡游 / 我的唯一岛主", 60, 105);
+    ctx.fillText("蛋岛环游记 / 我的唯一岛主", 60, 105);
 
     const hero = ctx.createLinearGradient(60, 150, 1140, 570);
     hero.addColorStop(0, "#284332");
@@ -492,7 +632,7 @@
 
     ctx.fillStyle = "#284332";
     ctx.font = "900 30px 'Microsoft YaHei'";
-    ctx.fillText("完整六段巡游图", 60, 670);
+    ctx.fillText("完整环游路线", 60, 670);
     ctx.fillStyle = "#708074";
     ctx.font = "17px 'Microsoft YaHei'";
     ctx.fillText("从四选一登岛，到最后一首歌成为岛主。", 315, 669);
@@ -502,9 +642,12 @@
     const boardY = 720;
     const boardW = 1080;
     const boardH = 1110;
-    const colW = boardW / 6;
+    const { counts, labels } = routeSpec();
+    const colW = boardW / data.length;
     const headerH = 48;
-    const colors = ["#e4f4b8", "#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"];
+    const colors = data.length === 6
+      ? ["#e4f4b8", "#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"]
+      : ["#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"];
     data.forEach((ids, stageIndex) => {
       const x = boardX + stageIndex * colW;
       ctx.fillStyle = colors[stageIndex];
@@ -514,9 +657,9 @@
       ctx.fillStyle = "#213025";
       ctx.textAlign = "center";
       ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(STAGE_LABELS[stageIndex], x + colW / 2, boardY + 31);
-      const rowH = (boardH - headerH) / STAGE_COUNTS[stageIndex];
-      const padded = [...ids, ...Array(Math.max(0, STAGE_COUNTS[stageIndex] - ids.length)).fill(null)];
+      ctx.fillText(labels[stageIndex], x + colW / 2, boardY + 31);
+      const rowH = (boardH - headerH) / counts[stageIndex];
+      const padded = [...ids, ...Array(Math.max(0, counts[stageIndex] - ids.length)).fill(null)];
       padded.forEach((id, rowIndex) => {
         const y = boardY + headerH + rowIndex * rowH;
         ctx.fillStyle = id ? "rgba(255,255,255,.82)" : "rgba(255,255,255,.35)";
@@ -524,21 +667,22 @@
         ctx.strokeStyle = "rgba(45,67,49,.16)";
         ctx.strokeRect(x, y, colW, rowH);
         if (id) {
-          const size = [11, 11, 15, 20, 27, 35][stageIndex];
+          const size = data.length === 6 ? [11, 11, 15, 20, 27, 35][stageIndex] : [12, 16, 21, 29, 36][stageIndex];
           ctx.fillStyle = "#213025";
           ctx.font = `800 ${size}px 'Microsoft YaHei'`;
           ctx.fillText(fitText(ctx, byId(id).title, colW - 12), x + colW / 2, y + rowH / 2 + size * .35);
         }
       });
     });
+    drawQrCode(ctx, createJourneyQr(), 958, 1848, 150);
     ctx.textAlign = "left";
+    ctx.fillStyle = "#284332";
+    ctx.font = "900 20px 'Microsoft YaHei'";
+    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 60, 1885);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
-    ctx.fillText("选择只保存在本机 · PURE ISLAND", 60, 1925);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#466f45";
-    ctx.font = "900 18px Arial";
-    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 1140, 1925);
+    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 60, 1922);
+    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 60, 1954);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
   }
@@ -553,7 +697,7 @@
     const url = URL.createObjectURL(posterBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `PURE-ISLAND-${byId(state.champion).title}.png`;
+    link.download = `蛋岛环游记-${byId(state.champion).title}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -561,9 +705,9 @@
   async function sharePoster() {
     if (!posterBlob) return;
     const winner = byId(state.champion);
-    const file = new File([posterBlob], `PURE-ISLAND-${winner.title}.png`, { type: "image/png" });
+    const file = new File([posterBlob], `蛋岛环游记-${winner.title}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
-      try { await navigator.share({ title: "我的蛋岛岛主", text: `我的蛋岛岛主是《${winner.title}》`, files: [file] }); }
+      try { await navigator.share({ title: "蛋岛环游记", text: `我的蛋岛岛主是《${winner.title}》`, files: [file] }); }
       catch (error) { if (error.name !== "AbortError") showToast("分享没有完成，可以先保存图片"); }
     } else {
       downloadPoster();
@@ -574,8 +718,13 @@
   function bindEvents() {
     $$('[data-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
     $("#startJourney").addEventListener("click", startJourney);
+    els.collectionToggles.addEventListener("change", updateSelectedCount);
+    $$('input[name="vocalScope"]').forEach((input) => input.addEventListener("change", updateSelectedCount));
     els.continueJourney.addEventListener("click", () => { state = load(); renderCurrent(); });
     $("#pauseJourney").addEventListener("click", () => { save(); updateContinue(); showView("home"); });
+    els.undoChoice.addEventListener("click", undoLastChoice);
+    els.checkpointUndo.addEventListener("click", undoLastChoice);
+    $("#resultUndo").addEventListener("click", undoLastChoice);
     els.choiceGrid.addEventListener("click", (event) => {
       const button = event.target.closest("[data-song-id]");
       if (!button) return;
@@ -589,7 +738,16 @@
     });
     els.confirmSelection.addEventListener("click", confirmSelection);
     $("#continueStage").addEventListener("click", continueStage);
-    $("#restartJourney").addEventListener("click", () => { clear(); startJourney(); });
+    $("#restartJourney").addEventListener("click", () => {
+      const config = state.config;
+      clear();
+      renderJourneyConfig(config);
+      startJourney();
+    });
+    $("#copyJourneyLink").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(journeyUrl()); showToast("测试链接已复制"); }
+      catch { showToast("复制失败，请使用浏览器分享地址"); }
+    });
     $("#makePoster").addEventListener("click", openPoster);
     $("#downloadPoster").addEventListener("click", downloadPoster);
     $("#sharePoster").addEventListener("click", sharePoster);
@@ -599,6 +757,7 @@
   }
 
   function init() {
+    renderJourneyConfig();
     bindEvents();
     updateContinue();
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(() => {});
