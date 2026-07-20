@@ -2,74 +2,48 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const meta = window.SONG_META || {};
-  const STORAGE_KEY = "pure-pick-battle-v3";
-  const UNKNOWN_ID = "__unknown__";
-  const UNKNOWN_SONG = {
-    id: UNKNOWN_ID,
-    title: "本组轮空",
-    source: "other",
-    sourceLabel: "未选择",
-    vocal: "solo",
-    vocalLabel: "未选择",
-    mood: "中立",
-    release: "两首都不熟悉",
-    seedScore: -1,
-    cardTextKind: "说明",
-    cardLines: ["这一组没有产生偏好", "后续遇到正常胜者时自动让行"],
-    quote: "这一次没有勉强选择。",
-    colors: ["#64748b", "#94a3b8"]
-  };
+  const STORAGE_KEY = "pure-island-journey-v4";
+  const FALLBACK_COVER = "assets/cover-fallback.svg";
+  const STAGE_COUNTS = [18, 20, 10, 5, 2, 1];
+  const STAGE_LABELS = ["登岛", "复活20", "十强", "五强", "决赛", "岛主"];
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const byId = (id) => id === UNKNOWN_ID ? UNKNOWN_SONG : songs.find((song) => song.id === id);
-  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const byId = (id) => songs.find((song) => song.id === id);
 
   const els = {
     views: $$(".view"),
-    home: $("#homeView"),
-    setup: $("#setupView"),
-    battle: $("#battleView"),
-    checkpoint: $("#checkpointView"),
-    result: $("#resultView"),
-    continueBattle: $("#continueBattle"),
-    sourceFilters: $("#sourceFilters"),
-    vocalFilters: $("#vocalFilters"),
-    sizeOptions: $("#sizeOptions"),
-    poolCount: $("#poolCount"),
-    poolPreview: $("#poolPreview"),
-    launchBattle: $("#launchBattle"),
-    choiceA: $("#choiceA"),
-    choiceB: $("#choiceB"),
-    battleProgress: $("#battleProgress"),
-    progressText: $("#progressText"),
-    roundLabel: $("#roundLabel"),
-    roundTitle: $("#roundTitle"),
-    matchReason: $("#matchReason"),
-    undoChoice: $("#undoChoice"),
+    continueJourney: $("#continueJourney"),
+    stageEnglish: $("#stageEnglish"),
+    stageTitle: $("#stageTitle"),
+    stageCounter: $("#stageCounter"),
+    roundProgress: $("#roundProgress"),
+    choiceHint: $("#choiceHint"),
+    choiceTitle: $("#choiceTitle"),
+    choiceGrid: $("#choiceGrid"),
+    unfamiliarAction: $("#unfamiliarAction"),
+    matchNote: $("#matchNote"),
+    selectionGrid: $("#selectionGrid"),
+    selectionCount: $("#selectionCount"),
+    selectionNeed: $("#selectionNeed"),
+    confirmSelection: $("#confirmSelection"),
+    checkpointRoute: $("#checkpointRoute"),
+    finalRoute: $("#finalRoute"),
     aboutDialog: $("#aboutDialog"),
     posterDialog: $("#posterDialog"),
     canvas: $("#resultCanvas"),
     toast: $("#toast")
   };
 
-  const setupState = {
-    size: 64,
-    sources: new Set(Object.keys(meta.source || {})),
-    vocals: new Set(Object.keys(meta.vocal || {})),
-    pairing: "smart"
-  };
-
-  let battleState = null;
-  let toastTimer = null;
+  let state = null;
   let posterBlob = null;
+  let toastTimer = null;
 
   function showToast(message) {
-    els.toast.textContent = message;
-    els.toast.classList.add("show");
+    $("#toast").textContent = message;
+    $("#toast").classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+    toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 2100);
   }
 
   function showView(name) {
@@ -77,112 +51,11 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function safeLoad() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (!saved || saved.version !== 3 || !Array.isArray(saved.rounds)) return null;
-      return saved;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveBattle() {
-    if (!battleState) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(battleState));
-    $("#saveStatus").textContent = "已自动保存";
-  }
-
-  function clearBattle() {
-    battleState = null;
-    localStorage.removeItem(STORAGE_KEY);
-    updateContinueButton();
-  }
-
-  function updateContinueButton() {
-    const saved = safeLoad();
-    els.continueBattle.hidden = !saved;
-    els.continueBattle.textContent = saved?.complete ? "查看上次结果" : "继续上次进度";
-  }
-
-  function renderFilters() {
-    els.sourceFilters.innerHTML = Object.entries(meta.source).map(([key, label]) =>
-      `<button type="button" class="chip selected" data-filter-type="source" data-value="${key}">${label}</button>`
-    ).join("");
-    els.vocalFilters.innerHTML = Object.entries(meta.vocal).map(([key, label]) =>
-      `<button type="button" class="chip selected" data-filter-type="vocal" data-value="${key}">${label}</button>`
-    ).join("");
-  }
-
-  function filteredSongs() {
-    return songs.filter((song) => setupState.sources.has(song.source) && setupState.vocals.has(song.vocal));
-  }
-
-  function rankValue(song) {
-    return song.seedScore ?? -1;
-  }
-
-  function targetPoolSize(availableCount = filteredSongs().length) {
-    return setupState.size === "all" ? availableCount : setupState.size;
-  }
-
-  function selectPool() {
-    const available = filteredSongs().sort((a, b) => rankValue(b) - rankValue(a));
-    const targetSize = targetPoolSize(available.length);
-    if (available.length <= targetSize) return available;
-
-    // 先保留高热度候选，再以“来源 + 情绪”轮转补位，避免 16 首模式过于单一。
-    const picked = available.slice(0, Math.ceil(targetSize / 2));
-    const remaining = available.filter((song) => !picked.includes(song));
-    const groups = new Map();
-    remaining.forEach((song) => {
-      const key = `${song.source}-${song.mood}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(song);
-    });
-    while (picked.length < targetSize && groups.size) {
-      [...groups.entries()].forEach(([key, group]) => {
-        if (picked.length < targetSize && group.length) picked.push(group.shift());
-        if (!group.length) groups.delete(key);
-      });
-    }
-    return picked;
-  }
-
-  function updatePoolPreview() {
-    const available = filteredSongs();
-    const pool = selectPool();
-    const targetSize = targetPoolSize(available.length);
-    els.poolCount.textContent = setupState.size === "all" ? `${pool.length} / 全部` : `${pool.length} / ${targetSize}`;
-    els.poolPreview.innerHTML = pool.map((song, index) => `
-      <div class="mini-song">
-        <span>${String(index + 1).padStart(2, "0")}</span>
-        <b>${song.title}</b>
-        <small>${song.sourceLabel} · ${song.mood}</small>
-      </div>`).join("");
-    const enough = available.length >= 64 && pool.length >= targetSize;
-    els.launchBattle.disabled = !enough;
-    els.launchBattle.firstChild.textContent = enough ? "生成对阵并开始 " : `至少还需 ${Math.max(0, 64 - available.length)} 首 `;
-  }
-
-  function toggleFilter(button) {
-    const type = button.dataset.filterType;
-    const value = button.dataset.value;
-    const set = type === "source" ? setupState.sources : setupState.vocals;
-    if (set.has(value) && set.size === 1) {
-      showToast("至少保留一种筛选类型");
-      return;
-    }
-    if (set.has(value)) set.delete(value); else set.add(value);
-    button.classList.toggle("selected", set.has(value));
-    updatePoolPreview();
-  }
-
-  function shuffle(items) {
+  function shuffled(items) {
     const result = [...items];
-    for (let i = result.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
+    for (let index = result.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [result[index], result[swap]] = [result[swap], result[index]];
     }
     return result;
   }
@@ -190,679 +63,509 @@
   function similarity(a, b) {
     let score = 0;
     if (a.source === b.source) score += 5;
-    if (a.vocal === b.vocal) score += 3;
-    if (a.mood === b.mood) score += 2;
-    score -= Math.abs(rankValue(a) - rankValue(b)) * .015;
+    if (a.vocal === b.vocal) score += 2;
+    if (a.mood === b.mood) score += 3;
+    score -= Math.abs(a.seedScore - b.seedScore) * .01;
     return score;
   }
 
-  function pairReason(a, b, seeded = false) {
-    const matches = [];
-    if (a.source === b.source) matches.push(`同为${a.sourceLabel}`);
-    if (a.vocal === b.vocal) matches.push(`同为${a.vocalLabel}`);
-    if (a.mood === b.mood) matches.push(`同属${a.mood}气质`);
-    if (seeded) matches.push("种子分区保护");
-    return matches.length ? matches.slice(0, 2).join(" · ") : "跨类型惊喜相遇";
-  }
-
-  function smartFirstRound(pool) {
-    const ranked = [...pool].sort((a, b) => rankValue(b) - rankValue(a));
-    const seedCount = Math.min(Math.max(1, Math.floor(pool.length / 4)), Math.floor(pool.length / 2));
-    const seeds = ranked.slice(0, seedCount);
-    const candidates = ranked.slice(seedCount);
-    const seedPairs = seeds.map((seed) => {
-      let bestIndex = 0;
-      candidates.forEach((candidate, index) => {
-        if (similarity(seed, candidate) > similarity(seed, candidates[bestIndex])) bestIndex = index;
-      });
-      const opponent = candidates.splice(bestIndex, 1)[0];
-      return { a: seed.id, b: opponent.id, winner: null, reason: pairReason(seed, opponent, true), seedRank: seeds.indexOf(seed) + 1 };
+  function makeLandingGroups(pool) {
+    const ranked = [...pool].sort((a, b) => b.seedScore - a.seedScore);
+    const directSeed = ranked.shift();
+    const seeds = ranked.splice(0, 17);
+    const remaining = [...ranked];
+    const groups = seeds.map((seed) => {
+      const group = [seed];
+      while (group.length < 4) {
+        let bestIndex = 0;
+        remaining.forEach((candidate, index) => {
+          if (similarity(seed, candidate) > similarity(seed, remaining[bestIndex])) bestIndex = index;
+        });
+        group.push(remaining.splice(bestIndex, 1)[0]);
+      }
+      return shuffled(group).map((song) => song.id);
     });
+    return { directSeed: directSeed.id, groups };
+  }
 
-    const otherPairs = [];
-    while (candidates.length) {
-      const first = candidates.shift();
+  function makeDuelPairs(ids) {
+    const ranked = ids.map(byId).sort((a, b) => b.seedScore - a.seedScore);
+    const upper = ranked.splice(0, ranked.length / 2);
+    const lower = ranked;
+    return upper.map((seed) => {
       let bestIndex = 0;
-      candidates.forEach((candidate, index) => {
-        if (similarity(first, candidate) > similarity(first, candidates[bestIndex])) bestIndex = index;
+      lower.forEach((candidate, index) => {
+        if (similarity(seed, candidate) > similarity(seed, lower[bestIndex])) bestIndex = index;
       });
-      const second = candidates.splice(bestIndex, 1)[0];
-      otherPairs.push({ a: first.id, b: second.id, winner: null, reason: pairReason(first, second) });
-    }
-
-    // 常用的种子蛇形顺序；再与普通对局交错，让头部种子尽量分处不同小区。
-    const seedOrders = {
-      4: [1, 4, 2, 3],
-      8: [1, 8, 4, 5, 2, 7, 3, 6],
-      16: [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11]
-    };
-    const order = seedOrders[seedCount] || seeds.map((_, index) => index + 1);
-    const orderedSeeds = order.map((rank) => seedPairs.find((pair) => pair.seedRank === rank));
-    const pairs = [];
-    orderedSeeds.forEach((pair, index) => {
-      pairs.push(pair);
-      if (otherPairs[index]) pairs.push(otherPairs[index]);
+      const opponent = lower.splice(bestIndex, 1)[0];
+      return shuffled([seed.id, opponent.id]);
     });
-    return pairs.concat(otherPairs.slice(orderedSeeds.length));
   }
 
-  function randomFirstRound(pool) {
-    const mixed = shuffle(pool);
-    const pairs = [];
-    for (let i = 0; i < mixed.length; i += 2) {
-      pairs.push({ a: mixed[i].id, b: mixed[i + 1].id, winner: null, reason: "完全随机相遇" });
-    }
-    return pairs;
-  }
-
-  function beginBattle() {
-    const pool = selectPool();
-    if (pool.length < 64) return;
-    const bracketSize = 2 ** Math.floor(Math.log2(pool.length));
-    let firstRound;
-    if (pool.length === bracketSize) {
-      const firstPairs = setupState.pairing === "smart" ? smartFirstRound(pool) : randomFirstRound(pool);
-      firstRound = { size: pool.length, pairs: firstPairs };
-    } else {
-      const playInMatchCount = pool.length - bracketSize;
-      const ranked = [...pool].sort((a, b) => rankValue(b) - rankValue(a));
-      const playInSongs = ranked.slice(-playInMatchCount * 2);
-      const byeSongs = ranked.slice(0, ranked.length - playInMatchCount * 2);
-      const playInPairs = setupState.pairing === "smart" ? smartFirstRound(playInSongs) : randomFirstRound(playInSongs);
-      firstRound = {
-        size: pool.length,
-        targetSize: bracketSize,
-        isPreliminary: true,
-        byes: byeSongs.map((song) => song.id),
-        pairs: playInPairs
-      };
-    }
-    battleState = {
-      version: 3,
+  function freshState() {
+    const { directSeed, groups } = makeLandingGroups(songs);
+    return {
+      version: 4,
       createdAt: new Date().toISOString(),
-      poolSize: pool.length,
-      pairing: setupState.pairing,
-      selectedSongIds: pool.map((song) => song.id),
-      rounds: [firstRound],
-      currentRound: 0,
-      currentPair: 0,
-      completedMatches: 0,
-      totalMatches: pool.length - 1,
-      history: [],
-      complete: false
+      phase: "landing",
+      directSeed,
+      groups,
+      groupIndex: 0,
+      groupWinners: [],
+      eliminated: [],
+      duelPairs: [],
+      duelIndex: 0,
+      duelWinners: [],
+      selection: [],
+      selectionMode: null,
+      revivalSlots: 0,
+      top20: [],
+      top10: [],
+      top5: [],
+      finalists: [],
+      champion: null,
+      checkpoint: null
     };
-    saveBattle();
-    showView("battle");
-    renderBattle();
   }
 
-  function currentPair() {
-    return battleState?.rounds[battleState.currentRound]?.pairs[battleState.currentPair];
+  function save() {
+    if (state) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  function roundChinese(roundIndex, size, round) {
-    if (round?.isPreliminary) return `${size} 进 ${round.targetSize} · 附加赛`;
-    const labels = { 64: "64 强 · 第一轮", 32: "32 强 · 第二轮", 16: "16 强 · 第三轮", 8: "8 强 · 四分之一决赛", 4: "4 强 · 半决赛", 2: "冠军争夺战" };
-    return labels[size] || `第 ${roundIndex + 1} 轮`;
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      return saved?.version === 4 ? saved : null;
+    } catch {
+      return null;
+    }
   }
 
-  function songCardMarkup(song, side) {
-    const letter = /^[a-z]/i.test(song.title) ? song.title.charAt(0) : song.title.charAt(0);
-    const lines = song.cardLines.map((line) => `<span>${line}</span>`).join("");
+  function clear() {
+    state = null;
+    localStorage.removeItem(STORAGE_KEY);
+    updateContinue();
+  }
+
+  function updateContinue() {
+    const saved = load();
+    els.continueJourney.hidden = !saved;
+    if (saved) els.continueJourney.textContent = saved.phase === "complete" ? "查看上次岛主" : "继续上次巡游";
+  }
+
+  function imageMarkup(song, className = "") {
+    return `<img class="${className}" src="${song.cover}" alt="《${song.title}》封面" loading="lazy" onerror="this.onerror=null;this.src='${FALLBACK_COVER}'">`;
+  }
+
+  function shortLine(song) {
+    return song.cardLines[0] || "听见属于它的独特颜色";
+  }
+
+  function choiceCard(song) {
     return `
-      <div class="song-card-inner" style="--card-gradient:linear-gradient(145deg,${song.colors[0]},${song.colors[1]})">
-        <div class="song-card-top"><span class="song-letter">${letter}</span><span class="heat">✦ ${song.sourceLabel}</span></div>
-        <div>
-          <h3 class="song-card-title">${song.title}</h3>
-          <p class="song-card-sub">${song.release}</p>
-          <div class="tag-row"><span class="song-tag">${song.sourceLabel}</span><span class="song-tag">${song.vocalLabel}</span><span class="song-tag">${song.mood}</span></div>
-          <div class="card-lines"><small>${song.cardTextKind}</small>${lines}</div>
-          <div class="pick-call">选择这一首 <span>${side === "a" ? "↖" : "↗"}</span></div>
+      <button class="cover-choice" type="button" data-song-id="${song.id}">
+        <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}</em></div>
+        <div class="choice-info">
+          <h3>${song.title}</h3>
+          <small>${song.release}</small>
+          <div class="mini-lyric">${shortLine(song)}</div>
         </div>
-      </div>`;
+      </button>`;
   }
 
-  function renderBattle() {
-    if (!battleState || battleState.complete) {
-      if (battleState?.complete) renderResult();
+  function startJourney() {
+    state = freshState();
+    save();
+    renderCurrent();
+  }
+
+  function renderLanding() {
+    const group = state.groups[state.groupIndex].map(byId);
+    els.stageEnglish.textContent = "LANDING ROUND";
+    els.stageTitle.textContent = "登岛海选 · 四选一";
+    els.stageCounter.textContent = `${state.groupIndex + 1} / ${state.groups.length}`;
+    els.roundProgress.style.width = `${(state.groupIndex / state.groups.length) * 100}%`;
+    els.choiceHint.textContent = "从这组里留下唯一一首";
+    els.choiceTitle.textContent = "哪一首值得先登岛？";
+    els.choiceGrid.className = "choice-grid four-up";
+    els.choiceGrid.innerHTML = group.map(choiceCard).join("");
+    els.unfamiliarAction.hidden = false;
+    els.matchNote.hidden = false;
+    showView("battle");
+  }
+
+  function chooseLanding(winnerId) {
+    const group = state.groups[state.groupIndex];
+    if (winnerId) state.groupWinners.push(winnerId);
+    group.forEach((id) => { if (id !== winnerId) state.eliminated.push(id); });
+    state.groupIndex += 1;
+    if (state.groupIndex < state.groups.length) {
+      save();
+      renderLanding();
       return;
     }
-    const pair = currentPair();
-    if (!pair) return;
-    const a = byId(pair.a);
-    const b = byId(pair.b);
-    const round = battleState.rounds[battleState.currentRound];
-    els.choiceA.innerHTML = songCardMarkup(a, "a");
-    els.choiceB.innerHTML = songCardMarkup(b, "b");
-    els.choiceA.style.setProperty("--card-gradient", `linear-gradient(145deg,${a.colors[0]},${a.colors[1]})`);
-    els.choiceB.style.setProperty("--card-gradient", `linear-gradient(145deg,${b.colors[0]},${b.colors[1]})`);
-    els.roundLabel.textContent = round.isPreliminary ? "PLAY-IN ROUND" : (round.size === 2 ? "THE FINAL" : `ROUND OF ${round.size}`);
-    els.roundTitle.textContent = roundChinese(battleState.currentRound, round.size, round);
-    const decisionPairs = round.pairs.filter((match) => !match.auto);
-    const decisionIndex = Math.max(0, decisionPairs.indexOf(pair));
-    els.progressText.textContent = `本轮 ${decisionIndex + 1} / ${decisionPairs.length}`;
-    els.battleProgress.style.width = `${(decisionIndex / decisionPairs.length) * 100}%`;
-    els.matchReason.textContent = pair.reason;
-    els.undoChoice.disabled = battleState.history.length === 0;
+    const landing = [state.directSeed, ...state.groupWinners];
+    state.revivalSlots = 20 - landing.length;
+    state.selection = [];
+    state.selectionMode = "revival";
+    state.phase = "revival";
+    save();
+    renderSelection();
   }
 
-  function resolveAutomaticPairs(round) {
-    round.pairs.forEach((pair) => {
-      if (pair.winner || (pair.a !== UNKNOWN_ID && pair.b !== UNKNOWN_ID)) return;
-      pair.winner = pair.a === UNKNOWN_ID ? pair.b : pair.a;
-      if (pair.a === UNKNOWN_ID && pair.b === UNKNOWN_ID) pair.winner = UNKNOWN_ID;
-      pair.auto = true;
-      pair.reason = "轮空自动晋级";
-    });
+  function renderDuel() {
+    const pair = state.duelPairs[state.duelIndex].map(byId);
+    const isFinal = state.phase === "final";
+    const isTop20 = state.phase === "duel20";
+    els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : (isTop20 ? "TIDAL DUEL" : "INNER ISLAND DUEL");
+    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : (isTop20 ? "二十进十 · 二选一" : "十进五 · 二选一");
+    els.stageCounter.textContent = `${state.duelIndex + 1} / ${state.duelPairs.length}`;
+    els.roundProgress.style.width = `${(state.duelIndex / state.duelPairs.length) * 100}%`;
+    els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
+    els.choiceTitle.textContent = isFinal ? "谁来成为蛋岛岛主？" : "这一组，谁继续向岛心前进？";
+    els.choiceGrid.className = "choice-grid duel";
+    els.choiceGrid.innerHTML = pair.map(choiceCard).join("");
+    els.unfamiliarAction.hidden = true;
+    els.matchNote.hidden = true;
+    showView("battle");
   }
 
-  function nextPendingPairIndex(round, start = 0) {
-    for (let index = start; index < round.pairs.length; index += 1) {
-      if (!round.pairs[index].winner) return index;
+  function chooseDuel(winnerId) {
+    state.duelWinners.push(winnerId);
+    state.duelIndex += 1;
+    if (state.duelIndex < state.duelPairs.length) {
+      save();
+      renderDuel();
+      return;
     }
-    return -1;
-  }
-
-  function buildFollowingRound(round) {
-    const matchWinners = round.pairs.map((match) => match.winner);
-    let nextRound;
-    if (round.isPreliminary) {
-      const advancing = [...round.byes, ...matchWinners].map(byId);
-      const nextPairs = battleState.pairing === "smart" ? smartFirstRound(advancing) : randomFirstRound(advancing);
-      nextRound = { size: round.targetSize, pairs: nextPairs };
+    if (state.phase === "duel20") {
+      state.top10 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top10);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("十座内岛已经升起", "接下来十进五，选择会变得更难。", "duel10");
+    } else if (state.phase === "duel10") {
+      state.top5 = [...state.duelWinners];
+      state.selection = [];
+      state.selectionMode = "council";
+      setCheckpoint("五首歌抵达岛心", "下一站是岛主议会：五选二。", "council");
     } else {
-      const nextPairs = [];
-      for (let index = 0; index < matchWinners.length; index += 2) {
-        nextPairs.push({
-          a: matchWinners[index],
-          b: matchWinners[index + 1],
-          winner: null,
-          reason: "淘汰赛晋级相遇"
-        });
-      }
-      nextRound = { size: matchWinners.length, pairs: nextPairs };
-    }
-    resolveAutomaticPairs(nextRound);
-    battleState.rounds.push(nextRound);
-    battleState.currentRound += 1;
-    battleState.currentPair = Math.max(0, nextPendingPairIndex(nextRound));
-  }
-
-  function finishTournament(round) {
-    battleState.complete = true;
-    battleState.champion = round.pairs[0].winner;
-    battleState.completedAt = new Date().toISOString();
-    battleState.checkpointPending = false;
-  }
-
-  function chooseSong(winnerId) {
-    const pair = currentPair();
-    if (!pair || pair.winner) return;
-    pair.winner = winnerId;
-    pair.unfamiliar = winnerId === UNKNOWN_ID;
-    battleState.history.push({ round: battleState.currentRound, pair: battleState.currentPair });
-    battleState.completedMatches += 1;
-
-    const round = battleState.rounds[battleState.currentRound];
-    const pendingIndex = nextPendingPairIndex(round, battleState.currentPair + 1);
-    if (pendingIndex >= 0) {
-      battleState.currentPair = pendingIndex;
-    } else {
-      const completedRound = battleState.currentRound;
-      if (!round.isPreliminary && round.pairs.length === 1) {
-        finishTournament(round);
-      } else {
-        buildFollowingRound(round);
-        battleState.checkpointPending = true;
-        battleState.checkpointRound = completedRound;
-      }
-    }
-    saveBattle();
-    if (battleState.complete) {
+      state.champion = winnerId;
+      state.phase = "complete";
+      state.completedAt = new Date().toISOString();
+      state.checkpoint = null;
+      save();
       renderResult();
-    } else if (battleState.checkpointPending) {
-      renderCheckpoint(battleState.checkpointRound);
+      return;
+    }
+    save();
+    renderCheckpoint();
+  }
+
+  function selectionCandidates() {
+    return state.selectionMode === "revival" ? state.eliminated.map(byId) : state.top5.map(byId);
+  }
+
+  function selectionLimit() {
+    return state.selectionMode === "revival" ? state.revivalSlots : 2;
+  }
+
+  function renderSelection() {
+    const revival = state.selectionMode === "revival";
+    const limit = selectionLimit();
+    $("#selectionEyebrow").textContent = revival ? "TIDAL REVIVAL" : "ISLAND COUNCIL";
+    $("#selectionTitle").textContent = revival ? "潮水送回一些遗珠" : "五强进入岛主议会";
+    $("#selectionCopy").innerHTML = revival
+      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，凑齐二十强。`
+      : `从五强中同时选出 <b id="selectionNeed">2</b> 首，进入最终决选。`;
+    els.selectionNeed = $("#selectionNeed");
+    els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
+    els.confirmSelection.disabled = state.selection.length !== limit;
+    els.selectionGrid.innerHTML = selectionCandidates().map((song) => `
+      <button class="select-card ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}">
+        ${imageMarkup(song)}<div><b>${song.title}</b><small>${song.release}</small></div>
+      </button>`).join("");
+    showView("selection");
+  }
+
+  function toggleSelection(id) {
+    const limit = selectionLimit();
+    const index = state.selection.indexOf(id);
+    if (index >= 0) state.selection.splice(index, 1);
+    else if (state.selection.length < limit) state.selection.push(id);
+    else return showToast(`这一站只能选择 ${limit} 首`);
+    save();
+    renderSelection();
+  }
+
+  function confirmSelection() {
+    if (state.selection.length !== selectionLimit()) return;
+    if (state.selectionMode === "revival") {
+      state.top20 = [state.directSeed, ...state.groupWinners, ...state.selection];
+      state.duelPairs = makeDuelPairs(state.top20);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("二十座音乐岛已经亮起", "离开海选区，下一站开始双歌对决。", "duel20");
     } else {
-      renderBattle();
+      state.finalists = [...state.selection];
+      state.duelPairs = [[...state.finalists]];
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，决定你的蛋岛岛主。", "final");
     }
+    state.selection = [];
+    save();
+    renderCheckpoint();
   }
 
-  function undoChoice() {
-    if (!battleState?.history.length) return;
-    const last = battleState.history.pop();
-    if (last.round < battleState.rounds.length - 1) battleState.rounds = battleState.rounds.slice(0, last.round + 1);
-    const pair = battleState.rounds[last.round].pairs[last.pair];
-    pair.winner = null;
-    delete pair.unfamiliar;
-    battleState.currentRound = last.round;
-    battleState.currentPair = last.pair;
-    battleState.completedMatches -= 1;
-    battleState.complete = false;
-    battleState.checkpointPending = false;
-    delete battleState.champion;
-    delete battleState.completedAt;
-    saveBattle();
-    renderBattle();
-    showToast("已撤回上一次选择");
+  function setCheckpoint(title, copy, nextPhase) {
+    state.phase = "checkpoint";
+    state.checkpoint = { title, copy, nextPhase };
   }
 
-  function championPath() {
-    if (!battleState?.champion) return [];
-    return battleState.rounds.map((round, index) => {
-      const match = round.pairs.find((pair) => pair.winner === battleState.champion);
-      if (!match) return null;
-      const opponentId = match.a === battleState.champion ? match.b : match.a;
-      return { round: round.isPreliminary ? "附加赛" : (round.size === 2 ? "决赛" : `${round.size} 强`), opponent: byId(opponentId), index };
-    }).filter(Boolean);
+  function routeData() {
+    return [
+      [state.directSeed, ...state.groupWinners],
+      state.top20,
+      state.top10,
+      state.top5,
+      state.finalists,
+      state.champion ? [state.champion] : []
+    ];
   }
 
-  function getFinalFour() {
-    if (!battleState) return [];
-    const semi = battleState.rounds.find((round) => round.size === 4);
-    if (!semi) return battleState.selectedSongIds.slice(0, 4).map(byId);
-    return semi.pairs.flatMap((pair) => [byId(pair.a), byId(pair.b)]);
-  }
-
-  function bracketStages() {
-    const bracketStart = battleState.rounds.findIndex((round) => !round.isPreliminary && round.size === 64);
-    if (bracketStart < 0) return null;
-    const bracketRounds = battleState.rounds.slice(bracketStart);
-    const initial = bracketRounds[0].pairs.flatMap((pair) => [pair.a, pair.b]);
-    const stages = [initial];
-    bracketRounds.forEach((round) => stages.push(round.pairs.map((pair) => pair.winner || null)));
-    const expectedStages = Math.log2(initial.length) + 1;
-    while (stages.length < expectedStages) {
-      stages.push(Array(initial.length / (2 ** stages.length)).fill(null));
-    }
-    return stages;
-  }
-
-  function renderBracket(container) {
-    const stages = bracketStages();
-    if (!container || !stages) return;
-    const preliminary = battleState.rounds.find((round) => round.isPreliminary);
-    const playIn = preliminary ? `
-      <div class="playin-summary">
-        <b>${preliminary.size} → ${preliminary.targetSize} 附加赛</b>
-        <div>${preliminary.pairs.map((pair) => {
-          const winner = pair.winner ? byId(pair.winner).title : "待定";
-          return `<span>${byId(pair.a).title} / ${byId(pair.b).title}<i>→ ${winner}</i></span>`;
-        }).join("")}</div>
-      </div>` : "";
-    const board = stages.map((ids, stageIndex) => {
-      const count = ids.length;
-      const label = count === 1 ? "冠军" : (count === 2 ? "决赛" : `${count}强`);
-      const entries = ids.map((id) => {
-        const song = id ? byId(id) : null;
-        const title = song?.title || "待定";
-        const classes = ["bracket-entry"];
-        if (!id) classes.push("pending");
-        if (id === UNKNOWN_ID) classes.push("unknown");
-        return `<div class="${classes.join(" ")}" style="--span:${2 ** stageIndex}"><span>${title}</span></div>`;
-      }).join("");
-      return `<div class="bracket-column" data-stage="${stageIndex}"><b class="bracket-column-head">${label}</b>${entries}</div>`;
+  function renderRoute(container) {
+    const data = routeData();
+    container.innerHTML = data.map((ids, stageIndex) => {
+      const padded = [...ids, ...Array(Math.max(0, STAGE_COUNTS[stageIndex] - ids.length)).fill(null)];
+      return `<div class="route-stage"><div class="route-head">${STAGE_LABELS[stageIndex]}</div>${padded.map((id) => `<div class="route-entry ${id ? "" : "pending"}"><span>${id ? byId(id).title : "·"}</span></div>`).join("")}</div>`;
     }).join("");
-    container.innerHTML = `${playIn}<div class="bracket-board">${board}</div>`;
   }
 
-  function renderCheckpoint(roundIndex) {
-    const round = battleState.rounds[roundIndex];
-    const targetSize = round.isPreliminary ? round.targetSize : round.size / 2;
-    const winnerIds = round.isPreliminary
-      ? [...round.byes, ...round.pairs.map((pair) => pair.winner)]
-      : round.pairs.map((pair) => pair.winner);
-    const songsThrough = winnerIds.filter((id) => id && id !== UNKNOWN_ID).map(byId);
-    const vacantCount = targetSize - songsThrough.length;
-    $("#checkpointRoundLabel").textContent = `${round.size} → ${targetSize}`;
-    $("#advancerTitle").textContent = `当前 ${targetSize} 强`;
-    $("#advancerCount").textContent = vacantCount ? `${songsThrough.length} 首 · ${vacantCount} 轮空` : `${songsThrough.length} 首`;
-    $("#advancerList").innerHTML = songsThrough.map((song, index) => `
-      <div class="advancer-item"><span>${String(index + 1).padStart(2, "0")}</span><div><b>${song.title}</b><small>${song.release}</small></div></div>
-    `).join("");
-    renderBracket($("#checkpointBracket"));
+  function renderCheckpoint() {
+    $("#checkpointTitle").textContent = state.checkpoint.title;
+    $("#checkpointCopy").textContent = state.checkpoint.copy;
+    renderRoute(els.checkpointRoute);
     showView("checkpoint");
   }
 
-  function continueAfterCheckpoint() {
-    battleState.checkpointPending = false;
-    const round = battleState.rounds[battleState.currentRound];
-    const pendingIndex = nextPendingPairIndex(round);
-    if (pendingIndex >= 0) {
-      battleState.currentPair = pendingIndex;
-      saveBattle();
-      showView("battle");
-      renderBattle();
-      return;
-    }
-    if (!round.isPreliminary && round.pairs.length === 1) {
-      finishTournament(round);
-      saveBattle();
-      renderResult();
-      return;
-    }
-    const completedRound = battleState.currentRound;
-    buildFollowingRound(round);
-    battleState.checkpointPending = true;
-    battleState.checkpointRound = completedRound;
-    saveBattle();
-    renderCheckpoint(completedRound);
+  function continueStage() {
+    state.phase = state.checkpoint.nextPhase;
+    state.checkpoint = null;
+    save();
+    renderCurrent();
   }
 
   function renderResult() {
-    if (!battleState?.complete) return;
-    const champion = byId(battleState.champion);
-    $("#resultMatchCount").textContent = battleState.completedMatches;
-    $("#championTitle").textContent = champion.title;
-    $("#championMeta").textContent = `${champion.sourceLabel} · ${champion.mood}`;
-    $("#championQuote").textContent = `“${champion.quote}”`;
-
-    const path = championPath();
-    $("#championPath").innerHTML = path.map((step, index) => `
-      ${index ? '<span class="path-arrow">→</span>' : ""}
-      <div class="path-step"><span>${step.round}</span><b>胜 ${step.opponent.title}</b></div>
-    `).join("");
-
-    const finalFour = getFinalFour();
-    $("#finalFour").innerHTML = finalFour.map((song, index) => `
-      <div class="finalist ${song.id === champion.id ? "champion" : ""}">
-        <span>${song.id === champion.id ? "CHAMPION" : `FINALIST 0${index + 1}`}</span>
-        <b>${song.title}</b>
-      </div>`).join("");
-    renderBracket($("#finalBracket"));
+    const winner = byId(state.champion);
+    $("#winnerCover").src = winner.cover;
+    $("#winnerCover").onerror = () => { $("#winnerCover").src = FALLBACK_COVER; };
+    $("#winnerTitle").textContent = winner.title;
+    $("#winnerSource").textContent = winner.release;
+    renderRoute(els.finalRoute);
     showView("result");
-    updateContinueButton();
+    updateContinue();
+  }
+
+  function renderCurrent() {
+    if (!state) return showView("home");
+    if (state.phase === "landing") renderLanding();
+    else if (["duel20", "duel10", "final"].includes(state.phase)) renderDuel();
+    else if (["revival", "council"].includes(state.phase)) renderSelection();
+    else if (state.phase === "checkpoint") renderCheckpoint();
+    else if (state.phase === "complete") renderResult();
   }
 
   function roundRect(ctx, x, y, width, height, radius) {
-    const r = Math.min(radius, width / 2, height / 2);
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + width, y, x + width, y + height, r);
-    ctx.arcTo(x + width, y + height, x, y + height, r);
-    ctx.arcTo(x, y + height, x, y, r);
-    ctx.arcTo(x, y, x + width, y, r);
-    ctx.closePath();
+    ctx.roundRect(x, y, width, height, radius);
   }
 
-  function fillRoundRect(ctx, x, y, width, height, radius, fill) {
-    roundRect(ctx, x, y, width, height, radius);
-    ctx.fillStyle = fill;
-    ctx.fill();
+  function fitText(ctx, text, width) {
+    if (ctx.measureText(text).width <= width) return text;
+    let value = text;
+    while (value.length && ctx.measureText(`${value}…`).width > width) value = value.slice(0, -1);
+    return `${value}…`;
   }
 
-  function fitText(ctx, text, maxWidth) {
-    if (ctx.measureText(text).width <= maxWidth) return text;
-    let result = text;
-    while (result.length && ctx.measureText(`${result}…`).width > maxWidth) result = result.slice(0, -1);
-    return `${result}…`;
+  function loadImage(source) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => {
+        if (source === FALLBACK_COVER) resolve(null);
+        else resolve(loadImage(FALLBACK_COVER));
+      };
+      image.src = source;
+    });
   }
 
-  function drawPoster() {
+  async function drawPoster() {
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
-    const W = 1440;
-    const preliminary = battleState.rounds.find((round) => round.isPreliminary);
-    const H = preliminary ? 3600 : 3450;
+    const W = 1200;
+    const H = 2000;
     canvas.width = W;
     canvas.height = H;
-    const champion = byId(battleState.champion);
-    const path = championPath();
-    const finalFour = getFinalFour();
+    const winner = byId(state.champion);
+    const [island, cover] = await Promise.all([loadImage("assets/island.svg"), loadImage(winner.cover)]);
 
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#fbf8ff");
-    bg.addColorStop(.52, "#f2ebff");
-    bg.addColorStop(1, "#fff7fb");
-    ctx.fillStyle = bg;
+    const background = ctx.createLinearGradient(0, 0, W, H);
+    background.addColorStop(0, "#f8fcef");
+    background.addColorStop(.55, "#eef6df");
+    background.addColorStop(1, "#eeeafb");
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, W, H);
 
-    const glow = ctx.createRadialGradient(1180, 120, 0, 1180, 120, 500);
-    glow.addColorStop(0, "rgba(196,181,253,.75)");
-    glow.addColorStop(1, "rgba(196,181,253,0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(650, 0, 790, 650);
+    ctx.fillStyle = "#466f45";
+    ctx.font = "900 21px Arial";
+    ctx.fillText("PURE ISLAND · DAN ISLAND", 60, 70);
+    ctx.fillStyle = "#708074";
+    ctx.font = "18px 'Microsoft YaHei'";
+    ctx.fillText("六段音乐巡游 / 我的唯一岛主", 60, 105);
 
-    ctx.fillStyle = "#6d28d9";
-    ctx.font = "900 24px Arial, sans-serif";
-    ctx.letterSpacing = "5px";
-    ctx.fillText("PURE PICK · SYC SONG BATTLE", 80, 92);
-    ctx.letterSpacing = "0px";
-    ctx.fillStyle = "#776b82";
-    ctx.font = "24px 'Microsoft YaHei', sans-serif";
-    ctx.fillText("你的偏爱，没有标准答案", 80, 132);
-
-    fillRoundRect(ctx, 80, 180, 1280, 570, 54, "#4c1d95");
-    const heroGrad = ctx.createLinearGradient(80, 180, 1360, 750);
-    heroGrad.addColorStop(0, "rgba(76,29,149,.1)");
-    heroGrad.addColorStop(.6, "#7c3aed");
-    heroGrad.addColorStop(1, "#a855f7");
-    fillRoundRect(ctx, 80, 180, 1280, 570, 54, heroGrad);
-
-    ctx.fillStyle = "#fef08a";
-    ctx.font = "900 20px Arial, sans-serif";
-    ctx.fillText("MY CHAMPION", 145, 255);
+    const hero = ctx.createLinearGradient(60, 150, 1140, 570);
+    hero.addColorStop(0, "#284332");
+    hero.addColorStop(.6, "#557c45");
+    hero.addColorStop(1, "#665394");
+    roundRect(ctx, 60, 145, 1080, 450, 42);
+    ctx.fillStyle = hero;
+    ctx.fill();
+    if (island) {
+      ctx.save(); ctx.globalAlpha = .22; ctx.drawImage(island, 680, 150, 500, 430); ctx.restore();
+    }
+    ctx.fillStyle = "#f4ef99";
+    ctx.font = "900 17px Arial";
+    ctx.fillText("OWNER OF DAN ISLAND", 115, 220);
     ctx.fillStyle = "rgba(255,255,255,.7)";
-    ctx.font = "24px 'Microsoft YaHei', sans-serif";
-    ctx.fillText(`经过 ${battleState.completedMatches} 次心动选择，我的本命歌曲是`, 145, 310);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 76px 'Microsoft YaHei', sans-serif";
-    ctx.fillText(fitText(ctx, champion.title, 700), 145, 420);
-    ctx.fillStyle = "rgba(255,255,255,.75)";
-    ctx.font = "26px 'Microsoft YaHei', sans-serif";
-    ctx.fillText(`${champion.sourceLabel} · ${champion.vocalLabel} · ${champion.mood}`, 150, 475);
-    ctx.font = "24px 'Microsoft YaHei', sans-serif";
-    ctx.fillText(fitText(ctx, `“${champion.quote}”`, 700), 150, 560);
-
-    // 唱片式冠军徽章
-    const discX = 1110;
-    const discY = 465;
-    for (let r = 190; r > 0; r -= 13) {
-      ctx.beginPath(); ctx.arc(discX, discY, r, 0, Math.PI * 2);
-      ctx.fillStyle = r % 26 === 8 ? "#241131" : "#30133f"; ctx.fill();
-    }
-    const labelGrad = ctx.createLinearGradient(1015, 370, 1205, 560);
-    labelGrad.addColorStop(0, "#fef08a"); labelGrad.addColorStop(1, "#f9a8d4");
-    ctx.beginPath(); ctx.arc(discX, discY, 83, 0, Math.PI * 2); ctx.fillStyle = labelGrad; ctx.fill();
-    ctx.fillStyle = "#3b1755"; ctx.textAlign = "center"; ctx.font = "900 20px Arial"; ctx.fillText("NO.1", discX, discY - 8);
-    ctx.font = "900 25px 'Microsoft YaHei'"; ctx.fillText(fitText(ctx, champion.title, 138), discX, discY + 29);
-    ctx.textAlign = "left";
-
-    ctx.fillStyle = "#6d28d9";
-    ctx.font = "900 18px Arial, sans-serif";
-    ctx.fillText("FINAL FOUR", 80, 825);
-    ctx.fillStyle = "#21152f";
-    ctx.font = "900 34px 'Microsoft YaHei', sans-serif";
-    ctx.fillText("最终四强", 80, 875);
-    finalFour.forEach((song, index) => {
-      const x = 80 + index * 322;
-      const isChampion = song.id === champion.id;
-      fillRoundRect(ctx, x, 915, 295, 132, 22, isChampion ? "#6d28d9" : "rgba(255,255,255,.82)");
-      ctx.fillStyle = isChampion ? "#fef08a" : "#8b5cf6";
-      ctx.font = "900 16px Arial";
-      ctx.fillText(isChampion ? "CHAMPION" : `FINALIST 0${index + 1}`, x + 24, 952);
-      ctx.fillStyle = isChampion ? "#fff" : "#21152f";
-      ctx.font = "900 27px 'Microsoft YaHei'";
-      ctx.fillText(fitText(ctx, song.title, 245), x + 24, 1005);
-    });
-
-    ctx.fillStyle = "#6d28d9";
-    ctx.font = "900 18px Arial, sans-serif";
-    ctx.fillText("FULL BRACKET", 80, 1120);
-    ctx.fillStyle = "#21152f";
-    ctx.font = "900 34px 'Microsoft YaHei', sans-serif";
-    ctx.fillText("完整晋级图", 80, 1170);
-    ctx.fillStyle = "#776b82";
-    ctx.font = "20px 'Microsoft YaHei', sans-serif";
-    ctx.fillText("每一条线，都是那一刻真实的偏爱。", 270, 1169);
-
-    if (preliminary) {
-      ctx.fillStyle = "#6d28d9";
-      ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(`${preliminary.size} 进 ${preliminary.targetSize} · 附加赛`, 80, 1210);
-      preliminary.pairs.forEach((pair, index) => {
-        const x = 80 + (index % 4) * 322;
-        const y = 1230 + Math.floor(index / 4) * 62;
-        const loserId = pair.a === pair.winner ? pair.b : pair.a;
-        fillRoundRect(ctx, x, y, 295, 47, 12, "rgba(255,255,255,.88)");
-        ctx.fillStyle = "#4c1d95";
-        ctx.font = "700 14px 'Microsoft YaHei'";
-        ctx.fillText(fitText(ctx, `${byId(pair.winner).title}  胜  ${byId(loserId).title}`, 265), x + 15, y + 29);
-      });
+    ctx.font = "22px 'Microsoft YaHei'";
+    ctx.fillText("我的蛋岛岛主是", 115, 270);
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 62px 'Microsoft YaHei'";
+    ctx.fillText(fitText(ctx, winner.title, 600), 115, 365);
+    ctx.fillStyle = "rgba(255,255,255,.7)";
+    ctx.font = "20px 'Microsoft YaHei'";
+    ctx.fillText(fitText(ctx, winner.release, 600), 118, 415);
+    if (cover) {
+      ctx.save();
+      roundRect(ctx, 850, 210, 220, 220, 35);
+      ctx.clip();
+      ctx.drawImage(cover, 850, 210, 220, 220);
+      ctx.restore();
     }
 
-    const bracketStart = preliminary ? battleState.rounds.indexOf(preliminary) + 1 : 0;
-    const bracketRounds = battleState.rounds.slice(bracketStart);
-    const initial = bracketRounds[0].pairs.flatMap((pair) => [pair.a, pair.b]);
-    const stages = [initial];
-    bracketRounds.forEach((round) => stages.push(round.pairs.map((pair) => pair.winner)));
-    const labels = [`${initial.length}强`, ...bracketRounds.map((round) => round.size === 2 ? "冠军" : `${round.size / 2}强`)];
-    const bracketX = 80;
-    const bracketY = preliminary ? 1390 : 1240;
-    const colW = 190;
-    const rowGap = 32;
-    const boxW = 165;
-    const boxH = 27;
+    ctx.fillStyle = "#284332";
+    ctx.font = "900 30px 'Microsoft YaHei'";
+    ctx.fillText("完整六段巡游图", 60, 670);
+    ctx.fillStyle = "#708074";
+    ctx.font = "17px 'Microsoft YaHei'";
+    ctx.fillText("从四选一登岛，到最后一首歌成为岛主。", 315, 669);
 
-    stages.forEach((stage, stageIndex) => {
-      const x = bracketX + stageIndex * colW;
-      ctx.fillStyle = stageIndex === stages.length - 1 ? "#6d28d9" : "#7c6f86";
+    const data = routeData();
+    const boardX = 60;
+    const boardY = 720;
+    const boardW = 1080;
+    const boardH = 1110;
+    const colW = boardW / 6;
+    const headerH = 48;
+    const colors = ["#e4f4b8", "#cceec0", "#bfe5d5", "#d6d0f4", "#f0d4ec", "#f4ef99"];
+    data.forEach((ids, stageIndex) => {
+      const x = boardX + stageIndex * colW;
+      ctx.fillStyle = colors[stageIndex];
+      ctx.fillRect(x, boardY, colW, headerH);
+      ctx.strokeStyle = "rgba(45,67,49,.26)";
+      ctx.strokeRect(x, boardY, colW, headerH);
+      ctx.fillStyle = "#213025";
+      ctx.textAlign = "center";
       ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(labels[stageIndex], x, bracketY - 28);
-
-      stage.forEach((songId, itemIndex) => {
-        const yCenter = bracketY + (((2 ** stageIndex) - 1) / 2) * rowGap + itemIndex * (2 ** stageIndex) * rowGap;
-        const isChamp = songId === champion.id && stageIndex === stages.length - 1;
-        fillRoundRect(ctx, x, yCenter - boxH / 2, boxW, boxH, 8, isChamp ? "#6d28d9" : "rgba(255,255,255,.9)");
-        ctx.fillStyle = isChamp ? "#fff" : "#35263f";
-        ctx.font = `${isChamp ? "900" : "700"} 13px 'Microsoft YaHei'`;
-        ctx.fillText(fitText(ctx, byId(songId).title, boxW - 20), x + 10, yCenter + 5);
-
-        if (stageIndex > 0) {
-          const previousX = x - colW + boxW;
-          const prevStage = stageIndex - 1;
-          const childY1 = bracketY + (((2 ** prevStage) - 1) / 2) * rowGap + (itemIndex * 2) * (2 ** prevStage) * rowGap;
-          const childY2 = bracketY + (((2 ** prevStage) - 1) / 2) * rowGap + (itemIndex * 2 + 1) * (2 ** prevStage) * rowGap;
-          ctx.strokeStyle = "rgba(124,58,237,.28)";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(previousX, childY1);
-          ctx.lineTo(previousX + 9, childY1);
-          ctx.lineTo(previousX + 9, childY2);
-          ctx.lineTo(x, yCenter);
-          ctx.stroke();
+      ctx.fillText(STAGE_LABELS[stageIndex], x + colW / 2, boardY + 31);
+      const rowH = (boardH - headerH) / STAGE_COUNTS[stageIndex];
+      const padded = [...ids, ...Array(Math.max(0, STAGE_COUNTS[stageIndex] - ids.length)).fill(null)];
+      padded.forEach((id, rowIndex) => {
+        const y = boardY + headerH + rowIndex * rowH;
+        ctx.fillStyle = id ? "rgba(255,255,255,.82)" : "rgba(255,255,255,.35)";
+        ctx.fillRect(x, y, colW, rowH);
+        ctx.strokeStyle = "rgba(45,67,49,.16)";
+        ctx.strokeRect(x, y, colW, rowH);
+        if (id) {
+          const size = [11, 11, 15, 20, 27, 35][stageIndex];
+          ctx.fillStyle = "#213025";
+          ctx.font = `800 ${size}px 'Microsoft YaHei'`;
+          ctx.fillText(fitText(ctx, byId(id).title, colW - 12), x + colW / 2, y + rowH / 2 + size * .35);
         }
       });
     });
-
-    ctx.fillStyle = "#7c6f86";
-    ctx.font = "19px 'Microsoft YaHei'";
-    ctx.fillText(`选择仅保存在本机 · 结果生成 ${new Date().toLocaleDateString("zh-CN")}`, 80, H - 60);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#6d28d9";
-    ctx.font = "900 23px Arial";
-    ctx.fillText("PURE PICK  ✦", 1360, H - 60);
     ctx.textAlign = "left";
-
-    canvas.toBlob((blob) => { posterBlob = blob; }, "image/png", .96);
+    ctx.fillStyle = "#708074";
+    ctx.font = "16px 'Microsoft YaHei'";
+    ctx.fillText("选择只保存在本机 · PURE ISLAND", 60, 1925);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#466f45";
+    ctx.font = "900 18px Arial";
+    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 1140, 1925);
+    ctx.textAlign = "left";
+    posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
   }
 
-  function openPoster() {
-    drawPoster();
-    if (typeof els.posterDialog.showModal === "function") els.posterDialog.showModal();
-    else els.posterDialog.setAttribute("open", "");
+  async function openPoster() {
+    await drawPoster();
+    els.posterDialog.showModal();
   }
 
   function downloadPoster() {
-    if (!posterBlob) {
-      showToast("图片仍在生成，请稍后再试");
-      return;
-    }
-    const champion = byId(battleState.champion);
+    if (!posterBlob) return;
     const url = URL.createObjectURL(posterBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `PURE-PICK-${champion.title}.png`;
+    link.download = `PURE-ISLAND-${byId(state.champion).title}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function sharePoster() {
     if (!posterBlob) return;
-    const champion = byId(battleState.champion);
-    const file = new File([posterBlob], `PURE-PICK-${champion.title}.png`, { type: "image/png" });
+    const winner = byId(state.champion);
+    const file = new File([posterBlob], `PURE-ISLAND-${winner.title}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ title: "我的 PURE PICK", text: `我的单依纯本命歌曲是《${champion.title}》`, files: [file] });
-      } catch (error) {
-        if (error.name !== "AbortError") showToast("分享没有完成，可以先保存图片");
-      }
+      try { await navigator.share({ title: "我的蛋岛岛主", text: `我的蛋岛岛主是《${winner.title}》`, files: [file] }); }
+      catch (error) { if (error.name !== "AbortError") showToast("分享没有完成，可以先保存图片"); }
     } else {
       downloadPoster();
-      showToast("当前浏览器不支持直接分享，已改为保存图片");
+      showToast("当前浏览器不支持直接分享，已保存图片");
     }
   }
 
-  function restart() {
-    clearBattle();
-    showView("setup");
-    updatePoolPreview();
-  }
-
   function bindEvents() {
-    $$('[data-go-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
-    $("#startSetup").addEventListener("click", () => showView("setup"));
-    els.continueBattle.addEventListener("click", () => {
-      battleState = safeLoad();
-      if (!battleState) return updateContinueButton();
-      if (battleState.complete) renderResult();
-      else if (battleState.checkpointPending) renderCheckpoint(battleState.checkpointRound);
-      else { showView("battle"); renderBattle(); }
-    });
-    els.sizeOptions.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-size]");
+    $$('[data-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
+    $("#startJourney").addEventListener("click", startJourney);
+    els.continueJourney.addEventListener("click", () => { state = load(); renderCurrent(); });
+    $("#pauseJourney").addEventListener("click", () => { save(); updateContinue(); showView("home"); });
+    els.choiceGrid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-song-id]");
       if (!button) return;
-      setupState.size = button.dataset.size === "all" ? "all" : Number(button.dataset.size);
-      $$('[data-size]', els.sizeOptions).forEach((item) => item.classList.toggle("selected", item === button));
-      updatePoolPreview();
+      if (state.phase === "landing") chooseLanding(button.dataset.songId);
+      else chooseDuel(button.dataset.songId);
     });
-    [els.sourceFilters, els.vocalFilters].forEach((container) => container.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-filter-type]");
-      if (button) toggleFilter(button);
-    }));
-    $$('input[name="pairing"]').forEach((input) => input.addEventListener("change", () => {
-      setupState.pairing = input.value;
-      $$(".radio-card").forEach((card) => card.classList.toggle("active", card.contains(input)));
-    }));
-    els.launchBattle.addEventListener("click", beginBattle);
-    els.choiceA.addEventListener("click", () => chooseSong(currentPair()?.a));
-    els.choiceB.addEventListener("click", () => chooseSong(currentPair()?.b));
-    $("#unknownChoice").addEventListener("click", () => chooseSong(UNKNOWN_ID));
-    els.undoChoice.addEventListener("click", undoChoice);
-    $("#pauseBattle").addEventListener("click", () => { saveBattle(); updateContinueButton(); showView("home"); });
-    $("#restartBattle").addEventListener("click", restart);
-    $("#continueRound").addEventListener("click", continueAfterCheckpoint);
-    $("#checkpointHome").addEventListener("click", () => { saveBattle(); updateContinueButton(); showView("home"); });
+    els.unfamiliarAction.addEventListener("click", () => chooseLanding(null));
+    els.selectionGrid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-select-id]");
+      if (button) toggleSelection(button.dataset.selectId);
+    });
+    els.confirmSelection.addEventListener("click", confirmSelection);
+    $("#continueStage").addEventListener("click", continueStage);
+    $("#restartJourney").addEventListener("click", () => { clear(); startJourney(); });
     $("#makePoster").addEventListener("click", openPoster);
     $("#downloadPoster").addEventListener("click", downloadPoster);
     $("#sharePoster").addEventListener("click", sharePoster);
     $("#openAbout").addEventListener("click", () => els.aboutDialog.showModal());
-    $$('[data-close-modal]').forEach((button) => button.addEventListener("click", () => els.aboutDialog.close()));
+    $$('[data-close-about]').forEach((button) => button.addEventListener("click", () => els.aboutDialog.close()));
     $$('[data-close-poster]').forEach((button) => button.addEventListener("click", () => els.posterDialog.close()));
-    [els.aboutDialog, els.posterDialog].forEach((dialog) => dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) dialog.close();
-    }));
   }
 
   function init() {
-    $("#songCountStat").textContent = songs.length;
-    $("#allSizeLabel").textContent = `全曲库 · 最多 ${songs.length - 1} 次`;
-    renderFilters();
-    updatePoolPreview();
-    updateContinueButton();
     bindEvents();
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
-    }
+    updateContinue();
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 
   init();

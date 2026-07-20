@@ -1,5 +1,5 @@
-const CACHE = "pure-pick-v3";
-const ASSETS = ["./", "./index.html", "./styles.css", "./songs.js", "./app.js", "./manifest.webmanifest", "./assets/icon.svg"];
+const CACHE = "pure-island-v4";
+const ASSETS = ["./", "./index.html", "./styles.css", "./songs.js", "./app.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

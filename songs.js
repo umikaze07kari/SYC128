@@ -134,6 +134,7 @@ window.SONG_CATALOG = rawSongs.map((row, index) => {
     mood,
     release,
     seedScore,
+    cover: `assets/covers/${id}.jpg`,
     cardTextKind: lyricCue ? "歌词短摘" : "听感提示",
     cardLines: lyricCue ? [lyricCue] : (MOOD_CUES[mood] || ["把注意力交给旋律", "听见属于它的独特颜色"]),
     quote: `这一刻，我把偏爱留给《${title}》。`,

@@ -3,224 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#7c3aed">
-  <meta name="description" content="单依纯歌曲二选一对战，选出你的本命歌曲并生成分享结果图。">
-  <title>PURE PICK · 单依纯歌曲 Battle</title>
+  <meta name="theme-color" content="#557c45">
+  <meta name="description" content="登上蛋岛，用六段音乐巡游选出你的单依纯本命歌曲。">
+  <title>PURE ISLAND · 蛋岛选歌巡游</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="ambient ambient-one" aria-hidden="true"></div>
-  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="contour contour-a" aria-hidden="true"></div>
+  <div class="contour contour-b" aria-hidden="true"></div>
 
   <header class="topbar">
-    <button class="brand" type="button" data-go-home aria-label="回到首页">
-      <span class="brand-mark">P</span>
-      <span><b>PURE PICK</b><small>你的偏爱，没有标准答案</small></span>
+    <button class="brand" type="button" data-home aria-label="回到首页">
+      <span class="brand-egg">P</span>
+      <span><b>PURE ISLAND</b><small>蛋岛偏爱巡游</small></span>
     </button>
-    <button class="icon-button" id="openAbout" type="button" aria-label="玩法说明">?</button>
+    <button class="round-icon" id="openAbout" type="button" aria-label="查看赛制">?</button>
   </header>
 
   <main>
-    <section class="view active" id="homeView" aria-labelledby="homeTitle">
-      <div class="hero">
+    <section class="view active home-view" id="homeView">
+      <div class="island-hero">
         <div class="hero-copy">
-          <p class="eyebrow">SYC SONG BATTLE · 2026</p>
-          <h1 id="homeTitle">听见每一面，<br><span>选出唯一偏爱。</span></h1>
-          <p class="hero-desc">从单依纯完整曲库中进行一对一选择。系统会优先安排相似类型相遇，同时分散热门种子，直到你的冠军诞生。</p>
+          <p class="eyebrow">DAN ISLAND · SONG EXPEDITION</p>
+          <h1>在一座会唱歌的岛上，<span>找到你的岛主。</span></h1>
+          <p>69 首歌，六段巡游。先 4 选 1 快速登岛，再经历潮汐复活、双歌对决与岛主议会。</p>
           <div class="hero-actions">
-            <button class="primary-button" id="startSetup" type="button">开始选择 <span>→</span></button>
-            <button class="ghost-button" id="continueBattle" type="button" hidden>继续上次进度</button>
-          </div>
-          <div class="quick-stats" aria-label="应用特点">
-            <div><strong id="songCountStat">69</strong><span>首完整曲库</span></div>
-            <div><strong>LOCAL</strong><span>进度仅存本机</span></div>
-            <div><strong>PNG</strong><span>一键生成长图</span></div>
+            <button class="primary-button" id="startJourney" type="button">开始登岛 <span>↗</span></button>
+            <button class="soft-button" id="continueJourney" type="button" hidden>继续上次巡游</button>
           </div>
         </div>
-
-        <div class="hero-art" aria-hidden="true">
-          <span class="orbit orbit-one"></span>
-          <span class="orbit orbit-two"></span>
-          <span class="star star-one">✦</span>
-          <span class="star star-two">✦</span>
-          <div class="vinyl">
-            <div class="vinyl-lines"></div>
-            <div class="vinyl-label"><small>YOUR</small><b>NO.1</b><small>SONG</small></div>
-          </div>
-          <div class="float-card float-card-one"><span>01</span><b>同类型优先</b></div>
-          <div class="float-card float-card-two"><span>02</span><b>种子分区</b></div>
+        <div class="island-art">
+          <img src="assets/island.svg" alt="长着巨树的绿色蛋岛">
+          <span class="island-note note-one">69 首入岛</span>
+          <span class="island-note note-two">约 34 次决策</span>
         </div>
       </div>
 
-      <section class="feature-strip" aria-label="玩法介绍">
-        <article><span class="feature-no">01</span><div><b>选一组曲库</b><p>64 强或全曲库，也可以按来源与演唱形式筛选。</p></div></article>
-        <article><span class="feature-no">02</span><div><b>凭直觉二选一</b><p>不用打分，每次只回答“此刻更喜欢哪首”。</p></div></article>
-        <article><span class="feature-no">03</span><div><b>带走你的结果</b><p>生成时髦的紫色系对战长图，保存或分享。</p></div></article>
-      </section>
-    </section>
-
-    <section class="view" id="setupView" aria-labelledby="setupTitle">
-      <div class="section-heading">
-        <button class="back-button" type="button" data-go-home>←</button>
-        <div><p class="eyebrow">BUILD YOUR POOL</p><h2 id="setupTitle">组建本次曲池</h2></div>
-      </div>
-
-      <div class="setup-layout">
-        <div class="setup-panel">
-          <div class="field-group">
-            <div class="field-label"><span>对战规模</span><small>规模越大，越接近灵魂拷问</small></div>
-            <div class="segmented" id="sizeOptions">
-              <button class="selected" type="button" data-size="64"><b>64</b><span>标准局 · 63 次</span></button>
-              <button type="button" data-size="all"><b>全部</b><span id="allSizeLabel">全曲库 · 最多 68 次</span></button>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <div class="field-label"><span>歌曲来源</span><small>至少保留一项</small></div>
-            <div class="chip-list" id="sourceFilters"></div>
-          </div>
-
-          <div class="field-group">
-            <div class="field-label"><span>演唱形式</span></div>
-            <div class="chip-list" id="vocalFilters"></div>
-          </div>
-
-          <div class="field-group">
-            <div class="field-label"><span>编排方式</span><small>算法只影响首轮相遇</small></div>
-            <label class="radio-card active">
-              <input type="radio" name="pairing" value="smart" checked>
-              <span class="radio-icon">✦</span>
-              <span><b>智能编排</b><small>同来源 / 同演唱形式优先相遇，热门种子分散</small></span>
-              <i></i>
-            </label>
-            <label class="radio-card">
-              <input type="radio" name="pairing" value="random">
-              <span class="radio-icon">↝</span>
-              <span><b>完全随机</b><small>每次洗牌，允许任何歌曲在首轮相遇</small></span>
-              <i></i>
-            </label>
-          </div>
-        </div>
-
-        <aside class="pool-preview">
-          <div class="pool-preview-head"><div><p class="eyebrow">LIVE PREVIEW</p><h3>本次入选</h3></div><span id="poolCount">64 / 64</span></div>
-          <div class="mini-list" id="poolPreview"></div>
-          <p class="data-note">歌曲出处、短歌词摘录与听感提示可在 <code>songs.js</code> 中继续维护。所有选择和进度仅保存在本机。</p>
-          <button class="primary-button wide" id="launchBattle" type="button">生成对阵并开始 <span>→</span></button>
-        </aside>
+      <div class="journey-preview" aria-label="六阶段赛制">
+        <span><b>01</b>四选一</span><i>→</i><span><b>02</b>潮汐复活</span><i>→</i><span><b>03</b>二十进十</span><i>→</i><span><b>04</b>十进五</span><i>→</i><span><b>05</b>五选二</span><i>→</i><span><b>06</b>岛主决选</span>
       </div>
     </section>
 
-    <section class="view" id="battleView" aria-labelledby="battleTitle">
-      <div class="battle-head">
-        <button class="back-button" id="pauseBattle" type="button" aria-label="暂停并返回首页">×</button>
-        <div class="round-meta">
-          <p id="roundLabel">ROUND OF 32</p>
-          <strong id="roundTitle">32 强 · 第一轮</strong>
-        </div>
-        <button class="text-button" id="undoChoice" type="button" disabled>撤回</button>
+    <section class="view battle-view" id="battleView">
+      <div class="stage-bar">
+        <button class="back-button" id="pauseJourney" type="button" aria-label="暂停">×</button>
+        <div><p id="stageEnglish">LANDING ROUND</p><strong id="stageTitle">登岛海选 · 四选一</strong></div>
+        <span id="stageCounter">1 / 17</span>
       </div>
-      <div class="progress-track"><span id="battleProgress"></span></div>
-      <p class="progress-copy"><span id="progressText">本轮 1 / 32</span><span id="saveStatus">已自动保存</span></p>
+      <div class="round-progress"><span id="roundProgress"></span></div>
 
-      <div class="battle-stage">
-        <div class="battle-prompt"><span>THIS OR THAT</span><h2 id="battleTitle">这一刻，你更偏爱哪一首？</h2><p>点击卡片完成选择，不需要考虑“正确答案”。</p></div>
-        <div class="song-duel" id="songDuel">
-          <button class="song-card song-card-a" id="choiceA" type="button"></button>
-          <div class="duel-center">
-            <span class="versus" aria-hidden="true">OR</span>
-            <button class="unknown-button" id="unknownChoice" type="button"><b>?</b><span>都不熟悉</span></button>
-          </div>
-          <button class="song-card song-card-b" id="choiceB" type="button"></button>
-        </div>
-        <p class="match-reason" id="matchReason"></p>
+      <div class="choice-heading">
+        <span id="choiceHint">从这组里留下唯一一首</span>
+        <h2 id="choiceTitle">哪一首值得先登岛？</h2>
       </div>
+
+      <div class="choice-grid four-up" id="choiceGrid"></div>
+      <button class="unfamiliar-action" id="unfamiliarAction" type="button"><span>?</span> 这一组都不熟悉</button>
+      <p class="match-note" id="matchNote">只有登岛海选可以跳过整组，之后不会再出现此按钮。</p>
     </section>
 
-    <section class="view" id="checkpointView" aria-labelledby="checkpointTitle">
+    <section class="view selection-view" id="selectionView">
+      <div class="selection-head">
+        <p class="eyebrow" id="selectionEyebrow">TIDAL REVIVAL</p>
+        <h2 id="selectionTitle">潮水送回一些遗珠</h2>
+        <p id="selectionCopy">从离岛歌曲中选回 <b id="selectionNeed">2</b> 首，凑齐二十强。</p>
+        <span class="selection-count" id="selectionCount">0 / 2</span>
+      </div>
+      <div class="selection-grid" id="selectionGrid"></div>
+      <div class="sticky-action"><button class="primary-button" id="confirmSelection" type="button" disabled>确认选择 <span>→</span></button></div>
+    </section>
+
+    <section class="view checkpoint-view" id="checkpointView">
       <div class="checkpoint-head">
-        <p class="eyebrow">ROUND COMPLETE</p>
-        <span id="checkpointRoundLabel">64 → 32</span>
-        <h2 id="checkpointTitle">这一轮选完了</h2>
-        <p>先看看目前留下了谁。你可以慢慢检查晋级图，再继续下一轮。</p>
+        <span id="checkpointKicker">STAGE CLEAR</span>
+        <h2 id="checkpointTitle">二十座音乐岛已经亮起</h2>
+        <p id="checkpointCopy">巡游路线已更新，下一站继续缩小范围。</p>
       </div>
-      <section class="advance-card">
-        <div class="card-heading"><div><p class="eyebrow">ADVANCERS</p><h3 id="advancerTitle">当前 32 强</h3></div><span id="advancerCount">32 首</span></div>
-        <div class="advancer-list" id="advancerList"></div>
-      </section>
-      <section class="bracket-section checkpoint-bracket-section">
-        <div class="card-heading"><div><p class="eyebrow">CURRENT BRACKET</p><h3>当前完整晋级图</h3></div><span>可上下滚动查看</span></div>
-        <div class="bracket-shell" id="checkpointBracket"></div>
-      </section>
-      <div class="checkpoint-actions">
-        <button class="primary-button" id="continueRound" type="button">继续下一轮 <span>→</span></button>
-        <button class="ghost-button" id="checkpointHome" type="button">暂停，回到首页</button>
+      <div class="route-card">
+        <div class="route-card-head"><b>当前六段巡游图</b><small>越往右，偏爱越清晰</small></div>
+        <div class="island-route" id="checkpointRoute"></div>
       </div>
+      <button class="primary-button checkpoint-continue" id="continueStage" type="button">前往下一站 <span>→</span></button>
     </section>
 
-    <section class="view" id="resultView" aria-labelledby="resultTitle">
-      <div class="result-hero">
-        <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <p class="eyebrow">YOUR PURE PICK · CHAMPION</p>
-        <p class="result-kicker">完成 <span id="resultMatchCount">63</span> 次主动判断</p>
-        <h2 id="resultTitle">你的本命歌曲是</h2>
-        <div class="champion-disc"><div><span>NO.1</span><b id="championTitle">—</b><small id="championMeta">—</small></div></div>
-        <p class="champion-quote" id="championQuote"></p>
+    <section class="view result-view" id="resultView">
+      <div class="winner-island">
+        <img class="winner-tree" src="assets/island.svg" alt="蛋岛">
+        <p class="eyebrow">OWNER OF DAN ISLAND</p>
+        <span>你的蛋岛岛主是</span>
+        <div class="winner-cover"><img id="winnerCover" src="assets/cover-fallback.svg" alt="冠军歌曲封面"></div>
+        <h1 id="winnerTitle">—</h1>
+        <p id="winnerSource">—</p>
       </div>
 
-      <div class="result-grid">
-        <section class="result-card path-card">
-          <div class="card-heading"><div><p class="eyebrow">CHAMPION'S PATH</p><h3>冠军之路</h3></div><span>一路胜出</span></div>
-          <div class="champion-path" id="championPath"></div>
-        </section>
-        <section class="result-card final-card">
-          <div class="card-heading"><div><p class="eyebrow">FINAL FOUR</p><h3>最终四强</h3></div></div>
-          <div class="final-four" id="finalFour"></div>
-        </section>
+      <div class="route-card final-route-card">
+        <div class="route-card-head"><b>完整六段巡游图</b><small>69 首 → 唯一岛主</small></div>
+        <div class="island-route" id="finalRoute"></div>
       </div>
-
-      <section class="bracket-section final-bracket-section">
-        <div class="card-heading"><div><p class="eyebrow">FULL BRACKET</p><h3>完整晋级图</h3></div><span>从 64 强到冠军</span></div>
-        <p class="bracket-help">前两轮字号稍小，越接近冠军字号越大；手机端可直接纵向浏览完整路径。</p>
-        <div class="bracket-shell" id="finalBracket"></div>
-      </section>
 
       <div class="result-actions">
-        <button class="primary-button" id="makePoster" type="button">生成分享长图 <span>↗</span></button>
-        <button class="ghost-button" id="restartBattle" type="button">再玩一次</button>
+        <button class="primary-button" id="makePoster" type="button">生成蛋岛长图 <span>↗</span></button>
+        <button class="soft-button" id="restartJourney" type="button">重新巡游</button>
       </div>
     </section>
   </main>
 
-  <dialog id="aboutDialog" class="modal">
-    <button class="modal-close" data-close-modal type="button">×</button>
-    <p class="eyebrow">HOW IT WORKS</p>
-    <h2>不是排名，是偏爱的轨迹</h2>
-    <p>这是一场单败淘汰式歌曲二选一。输掉的歌并不代表“不好”，只代表在那一次相遇里，你选择了另一首。</p>
-    <ul>
-      <li><b>智能首轮：</b>优先让来源、演唱形式相近的歌相遇。</li>
-      <li><b>种子保护：</b>热门歌曲会分散到不同区，避免过早碰面。</li>
-      <li><b>都不熟悉：</b>两首均不代表偏好，本组记为轮空，不会随机替你选择。</li>
-      <li><b>本地优先：</b>所有进度只保存在你的浏览器，不上传任何数据。</li>
-    </ul>
-    <button class="primary-button wide" data-close-modal type="button">知道了</button>
+  <dialog class="modal" id="aboutDialog">
+    <button class="modal-close" data-close-about type="button">×</button>
+    <p class="eyebrow">ISLAND RULES</p>
+    <h2>六段巡游，不走传统淘汰树</h2>
+    <ol>
+      <li><b>登岛海选：</b>68 首分成 17 组四选一，1 号种子直达岛心。</li>
+      <li><b>潮汐复活：</b>从离岛歌曲中补足二十强。</li>
+      <li><b>双歌对决：</b>20→10、10→5，逐渐收紧偏爱。</li>
+      <li><b>岛主议会：</b>五强同场，选择两首进入最终决选。</li>
+      <li><b>岛主决选：</b>最后一次二选一。</li>
+    </ol>
+    <p>“都不熟悉”只在第一阶段出现；它不会随机替你选歌，复活名额会自动增加。</p>
+    <button class="primary-button wide" data-close-about type="button">知道了</button>
   </dialog>
 
-  <dialog id="posterDialog" class="modal poster-modal">
+  <dialog class="modal poster-modal" id="posterDialog">
     <button class="modal-close" data-close-poster type="button">×</button>
-    <p class="eyebrow">SHARE YOUR PICK</p>
-    <h2>你的偏爱长图</h2>
-    <div class="poster-wrap"><canvas id="resultCanvas" width="1080" height="1920"></canvas></div>
-    <div class="poster-actions">
-      <button class="primary-button" id="downloadPoster" type="button">保存 PNG</button>
-      <button class="ghost-button" id="sharePoster" type="button">分享</button>
-    </div>
+    <p class="eyebrow">ISLAND POSTER</p>
+    <h2>你的蛋岛巡游长图</h2>
+    <div class="poster-wrap"><canvas id="resultCanvas" width="1200" height="2000"></canvas></div>
+    <div class="poster-actions"><button class="primary-button" id="downloadPoster" type="button">保存 PNG</button><button class="soft-button" id="sharePoster" type="button">分享</button></div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
   <script src="songs.js"></script>
   <script src="app.js"></script>
 </body>
