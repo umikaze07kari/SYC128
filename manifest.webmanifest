@@ -1,0 +1,13 @@
+{
+  "name": "PURE PICK · 单依纯歌曲 Battle",
+  "short_name": "PURE PICK",
+  "description": "从单依纯曲库中二选一，选出你的本命歌曲。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f5ff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

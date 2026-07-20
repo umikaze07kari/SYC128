@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="description" content="单依纯歌曲二选一对战，选出你的本命歌曲并生成分享结果图。">
+  <title>PURE PICK · 单依纯歌曲 Battle</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="brand" type="button" data-go-home aria-label="回到首页">
+      <span class="brand-mark">P</span>
+      <span><b>PURE PICK</b><small>你的偏爱，没有标准答案</small></span>
+    </button>
+    <button class="icon-button" id="openAbout" type="button" aria-label="玩法说明">?</button>
+  </header>
+
+  <main>
+    <section class="view active" id="homeView" aria-labelledby="homeTitle">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">SYC SONG BATTLE · 2026</p>
+          <h1 id="homeTitle">听见每一面，<br><span>选出唯一偏爱。</span></h1>
+          <p class="hero-desc">从单依纯曲库中进行一对一选择。系统会优先安排相似类型相遇，同时分散高热度种子，直到你的冠军诞生。</p>
+          <div class="hero-actions">
+            <button class="primary-button" id="startSetup" type="button">开始选择 <span>→</span></button>
+            <button class="ghost-button" id="continueBattle" type="button" hidden>继续上次进度</button>
+          </div>
+          <div class="quick-stats" aria-label="应用特点">
+            <div><strong id="songCountStat">32</strong><span>首精选歌曲</span></div>
+            <div><strong>LOCAL</strong><span>进度仅存本机</span></div>
+            <div><strong>PNG</strong><span>一键生成长图</span></div>
+          </div>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <span class="orbit orbit-one"></span>
+          <span class="orbit orbit-two"></span>
+          <span class="star star-one">✦</span>
+          <span class="star star-two">✦</span>
+          <div class="vinyl">
+            <div class="vinyl-lines"></div>
+            <div class="vinyl-label"><small>YOUR</small><b>NO.1</b><small>SONG</small></div>
+          </div>
+          <div class="float-card float-card-one"><span>01</span><b>同类型优先</b></div>
+          <div class="float-card float-card-two"><span>02</span><b>种子分区</b></div>
+        </div>
+      </div>
+
+      <section class="feature-strip" aria-label="玩法介绍">
+        <article><span class="feature-no">01</span><div><b>选一组曲库</b><p>16 或 32 首，也可以按来源与演唱形式筛选。</p></div></article>
+        <article><span class="feature-no">02</span><div><b>凭直觉二选一</b><p>不用打分，每次只回答“此刻更喜欢哪首”。</p></div></article>
+        <article><span class="feature-no">03</span><div><b>带走你的结果</b><p>生成时髦的紫色系对战长图，保存或分享。</p></div></article>
+      </section>
+    </section>
+
+    <section class="view" id="setupView" aria-labelledby="setupTitle">
+      <div class="section-heading">
+        <button class="back-button" type="button" data-go-home>←</button>
+        <div><p class="eyebrow">BUILD YOUR POOL</p><h2 id="setupTitle">组建本次曲池</h2></div>
+      </div>
+
+      <div class="setup-layout">
+        <div class="setup-panel">
+          <div class="field-group">
+            <div class="field-label"><span>对战规模</span><small>规模越大，越接近灵魂拷问</small></div>
+            <div class="segmented" id="sizeOptions">
+              <button type="button" data-size="16"><b>16</b><span>轻量局 · 15 次</span></button>
+              <button class="selected" type="button" data-size="32"><b>32</b><span>完整局 · 31 次</span></button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label"><span>歌曲来源</span><small>至少保留一项</small></div>
+            <div class="chip-list" id="sourceFilters"></div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label"><span>演唱形式</span></div>
+            <div class="chip-list" id="vocalFilters"></div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label"><span>编排方式</span><small>算法只影响首轮相遇</small></div>
+            <label class="radio-card active">
+              <input type="radio" name="pairing" value="smart" checked>
+              <span class="radio-icon">✦</span>
+              <span><b>智能编排</b><small>同来源 / 同演唱形式优先相遇，热门种子分散</small></span>
+              <i></i>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="pairing" value="random">
+              <span class="radio-icon">↝</span>
+              <span><b>完全随机</b><small>每次洗牌，允许任何歌曲在首轮相遇</small></span>
+              <i></i>
+            </label>
+          </div>
+        </div>
+
+        <aside class="pool-preview">
+          <div class="pool-preview-head"><div><p class="eyebrow">LIVE PREVIEW</p><h3>本次入选</h3></div><span id="poolCount">32 / 32</span></div>
+          <div class="mini-list" id="poolPreview"></div>
+          <p class="data-note">热度为演示用综合指数，不代表实时播放或收藏量。可在 <code>songs.js</code> 中维护数据与更新时间。</p>
+          <button class="primary-button wide" id="launchBattle" type="button">生成对阵并开始 <span>→</span></button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="battleView" aria-labelledby="battleTitle">
+      <div class="battle-head">
+        <button class="back-button" id="pauseBattle" type="button" aria-label="暂停并返回首页">×</button>
+        <div class="round-meta">
+          <p id="roundLabel">ROUND OF 32</p>
+          <strong id="roundTitle">32 强 · 第一轮</strong>
+        </div>
+        <button class="text-button" id="undoChoice" type="button" disabled>撤回</button>
+      </div>
+      <div class="progress-track"><span id="battleProgress"></span></div>
+      <p class="progress-copy"><span id="progressText">1 / 31</span><span id="saveStatus">已自动保存</span></p>
+
+      <div class="battle-stage">
+        <div class="battle-prompt"><span>THIS OR THAT</span><h2 id="battleTitle">这一刻，你更偏爱哪一首？</h2><p>点击卡片完成选择，不需要考虑“正确答案”。</p></div>
+        <div class="song-duel" id="songDuel">
+          <button class="song-card song-card-a" id="choiceA" type="button"></button>
+          <div class="versus" aria-hidden="true"><span>OR</span></div>
+          <button class="song-card song-card-b" id="choiceB" type="button"></button>
+        </div>
+        <p class="match-reason" id="matchReason"></p>
+      </div>
+    </section>
+
+    <section class="view" id="resultView" aria-labelledby="resultTitle">
+      <div class="result-hero">
+        <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p class="eyebrow">YOUR PURE PICK · CHAMPION</p>
+        <p class="result-kicker">经过 <span id="resultMatchCount">31</span> 次心动选择</p>
+        <h2 id="resultTitle">你的本命歌曲是</h2>
+        <div class="champion-disc"><div><span>NO.1</span><b id="championTitle">—</b><small id="championMeta">—</small></div></div>
+        <p class="champion-quote" id="championQuote"></p>
+      </div>
+
+      <div class="result-grid">
+        <section class="result-card path-card">
+          <div class="card-heading"><div><p class="eyebrow">CHAMPION'S PATH</p><h3>冠军之路</h3></div><span>一路胜出</span></div>
+          <div class="champion-path" id="championPath"></div>
+        </section>
+        <section class="result-card final-card">
+          <div class="card-heading"><div><p class="eyebrow">FINAL FOUR</p><h3>最终四强</h3></div></div>
+          <div class="final-four" id="finalFour"></div>
+        </section>
+      </div>
+
+      <div class="result-actions">
+        <button class="primary-button" id="makePoster" type="button">生成分享长图 <span>↗</span></button>
+        <button class="ghost-button" id="restartBattle" type="button">再玩一次</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="aboutDialog" class="modal">
+    <button class="modal-close" data-close-modal type="button">×</button>
+    <p class="eyebrow">HOW IT WORKS</p>
+    <h2>不是排名，是偏爱的轨迹</h2>
+    <p>这是一场单败淘汰式歌曲二选一。输掉的歌并不代表“不好”，只代表在那一次相遇里，你选择了另一首。</p>
+    <ul>
+      <li><b>智能首轮：</b>优先让来源、演唱形式相近的歌相遇。</li>
+      <li><b>种子保护：</b>综合热度靠前的歌曲分散到不同区，避免过早碰面。</li>
+      <li><b>本地优先：</b>所有进度只保存在你的浏览器，不上传任何数据。</li>
+    </ul>
+    <button class="primary-button wide" data-close-modal type="button">知道了</button>
+  </dialog>
+
+  <dialog id="posterDialog" class="modal poster-modal">
+    <button class="modal-close" data-close-poster type="button">×</button>
+    <p class="eyebrow">SHARE YOUR PICK</p>
+    <h2>你的偏爱长图</h2>
+    <div class="poster-wrap"><canvas id="resultCanvas" width="1080" height="1920"></canvas></div>
+    <div class="poster-actions">
+      <button class="primary-button" id="downloadPoster" type="button">保存 PNG</button>
+      <button class="ghost-button" id="sharePoster" type="button">分享</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="songs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
