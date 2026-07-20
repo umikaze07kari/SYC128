@@ -1,4 +1,4 @@
-const CACHE = "pure-pick-v2";
+const CACHE = "pure-pick-v3";
 const ASSETS = ["./", "./index.html", "./styles.css", "./songs.js", "./app.js", "./manifest.webmanifest", "./assets/icon.svg"];
 
 self.addEventListener("install", (event) => {

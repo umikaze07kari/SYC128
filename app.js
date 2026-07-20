@@ -3,11 +3,27 @@
 
   const songs = window.SONG_CATALOG || [];
   const meta = window.SONG_META || {};
-  const STORAGE_KEY = "pure-pick-battle-v2";
+  const STORAGE_KEY = "pure-pick-battle-v3";
+  const UNKNOWN_ID = "__unknown__";
+  const UNKNOWN_SONG = {
+    id: UNKNOWN_ID,
+    title: "本组轮空",
+    source: "other",
+    sourceLabel: "未选择",
+    vocal: "solo",
+    vocalLabel: "未选择",
+    mood: "中立",
+    release: "两首都不熟悉",
+    seedScore: -1,
+    cardTextKind: "说明",
+    cardLines: ["这一组没有产生偏好", "后续遇到正常胜者时自动让行"],
+    quote: "这一次没有勉强选择。",
+    colors: ["#64748b", "#94a3b8"]
+  };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const byId = (id) => songs.find((song) => song.id === id);
+  const byId = (id) => id === UNKNOWN_ID ? UNKNOWN_SONG : songs.find((song) => song.id === id);
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
   const els = {
@@ -15,6 +31,7 @@
     home: $("#homeView"),
     setup: $("#setupView"),
     battle: $("#battleView"),
+    checkpoint: $("#checkpointView"),
     result: $("#resultView"),
     continueBattle: $("#continueBattle"),
     sourceFilters: $("#sourceFilters"),
@@ -63,7 +80,7 @@
   function safeLoad() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (!saved || saved.version !== 2 || !Array.isArray(saved.rounds)) return null;
+      if (!saved || saved.version !== 3 || !Array.isArray(saved.rounds)) return null;
       return saved;
     } catch {
       return null;
@@ -102,11 +119,7 @@
   }
 
   function rankValue(song) {
-    return song.totalFavoritesWan ?? -1;
-  }
-
-  function formatFavorites(value) {
-    return value == null ? "—" : `${Number(value).toFixed(Number(value) % 1 ? 1 : 0)}w`;
+    return song.seedScore ?? -1;
   }
 
   function targetPoolSize(availableCount = filteredSongs().length) {
@@ -145,7 +158,7 @@
       <div class="mini-song">
         <span>${String(index + 1).padStart(2, "0")}</span>
         <b>${song.title}</b>
-        <small>${song.sourceLabel} · ${formatFavorites(song.totalFavoritesWan)}</small>
+        <small>${song.sourceLabel} · ${song.mood}</small>
       </div>`).join("");
     const enough = available.length >= 64 && pool.length >= targetSize;
     els.launchBattle.disabled = !enough;
@@ -179,7 +192,7 @@
     if (a.source === b.source) score += 5;
     if (a.vocal === b.vocal) score += 3;
     if (a.mood === b.mood) score += 2;
-    score -= Math.abs(a.popularity - b.popularity) * .015;
+    score -= Math.abs(rankValue(a) - rankValue(b)) * .015;
     return score;
   }
 
@@ -265,7 +278,7 @@
       };
     }
     battleState = {
-      version: 2,
+      version: 3,
       createdAt: new Date().toISOString(),
       poolSize: pool.length,
       pairing: setupState.pairing,
@@ -295,14 +308,15 @@
 
   function songCardMarkup(song, side) {
     const letter = /^[a-z]/i.test(song.title) ? song.title.charAt(0) : song.title.charAt(0);
+    const lines = song.cardLines.map((line) => `<span>${line}</span>`).join("");
     return `
       <div class="song-card-inner" style="--card-gradient:linear-gradient(145deg,${song.colors[0]},${song.colors[1]})">
-        <div class="song-card-top"><span class="song-letter">${letter}</span><span class="heat">✦ 全平台 ${formatFavorites(song.totalFavoritesWan)}</span></div>
+        <div class="song-card-top"><span class="song-letter">${letter}</span><span class="heat">✦ ${song.sourceLabel}</span></div>
         <div>
           <h3 class="song-card-title">${song.title}</h3>
-          <p class="song-card-sub">${song.release} · 数据更新 ${song.updatedAt}</p>
+          <p class="song-card-sub">${song.release}</p>
           <div class="tag-row"><span class="song-tag">${song.sourceLabel}</span><span class="song-tag">${song.vocalLabel}</span><span class="song-tag">${song.mood}</span></div>
-          <div class="platform-favorites"><span>QQ ${formatFavorites(song.platformFavorites.qq)}</span><span>网易 ${formatFavorites(song.platformFavorites.netease)}</span><span>酷狗 ${formatFavorites(song.platformFavorites.kugou)}</span></div>
+          <div class="card-lines"><small>${song.cardTextKind}</small>${lines}</div>
           <div class="pick-call">选择这一首 <span>${side === "a" ? "↖" : "↗"}</span></div>
         </div>
       </div>`;
@@ -324,52 +338,90 @@
     els.choiceB.style.setProperty("--card-gradient", `linear-gradient(145deg,${b.colors[0]},${b.colors[1]})`);
     els.roundLabel.textContent = round.isPreliminary ? "PLAY-IN ROUND" : (round.size === 2 ? "THE FINAL" : `ROUND OF ${round.size}`);
     els.roundTitle.textContent = roundChinese(battleState.currentRound, round.size, round);
-    els.progressText.textContent = `${battleState.completedMatches + 1} / ${battleState.totalMatches}`;
-    els.battleProgress.style.width = `${(battleState.completedMatches / battleState.totalMatches) * 100}%`;
+    const decisionPairs = round.pairs.filter((match) => !match.auto);
+    const decisionIndex = Math.max(0, decisionPairs.indexOf(pair));
+    els.progressText.textContent = `本轮 ${decisionIndex + 1} / ${decisionPairs.length}`;
+    els.battleProgress.style.width = `${(decisionIndex / decisionPairs.length) * 100}%`;
     els.matchReason.textContent = pair.reason;
     els.undoChoice.disabled = battleState.history.length === 0;
+  }
+
+  function resolveAutomaticPairs(round) {
+    round.pairs.forEach((pair) => {
+      if (pair.winner || (pair.a !== UNKNOWN_ID && pair.b !== UNKNOWN_ID)) return;
+      pair.winner = pair.a === UNKNOWN_ID ? pair.b : pair.a;
+      if (pair.a === UNKNOWN_ID && pair.b === UNKNOWN_ID) pair.winner = UNKNOWN_ID;
+      pair.auto = true;
+      pair.reason = "轮空自动晋级";
+    });
+  }
+
+  function nextPendingPairIndex(round, start = 0) {
+    for (let index = start; index < round.pairs.length; index += 1) {
+      if (!round.pairs[index].winner) return index;
+    }
+    return -1;
+  }
+
+  function buildFollowingRound(round) {
+    const matchWinners = round.pairs.map((match) => match.winner);
+    let nextRound;
+    if (round.isPreliminary) {
+      const advancing = [...round.byes, ...matchWinners].map(byId);
+      const nextPairs = battleState.pairing === "smart" ? smartFirstRound(advancing) : randomFirstRound(advancing);
+      nextRound = { size: round.targetSize, pairs: nextPairs };
+    } else {
+      const nextPairs = [];
+      for (let index = 0; index < matchWinners.length; index += 2) {
+        nextPairs.push({
+          a: matchWinners[index],
+          b: matchWinners[index + 1],
+          winner: null,
+          reason: "淘汰赛晋级相遇"
+        });
+      }
+      nextRound = { size: matchWinners.length, pairs: nextPairs };
+    }
+    resolveAutomaticPairs(nextRound);
+    battleState.rounds.push(nextRound);
+    battleState.currentRound += 1;
+    battleState.currentPair = Math.max(0, nextPendingPairIndex(nextRound));
+  }
+
+  function finishTournament(round) {
+    battleState.complete = true;
+    battleState.champion = round.pairs[0].winner;
+    battleState.completedAt = new Date().toISOString();
+    battleState.checkpointPending = false;
   }
 
   function chooseSong(winnerId) {
     const pair = currentPair();
     if (!pair || pair.winner) return;
     pair.winner = winnerId;
+    pair.unfamiliar = winnerId === UNKNOWN_ID;
     battleState.history.push({ round: battleState.currentRound, pair: battleState.currentPair });
     battleState.completedMatches += 1;
 
     const round = battleState.rounds[battleState.currentRound];
-    if (battleState.currentPair < round.pairs.length - 1) {
-      battleState.currentPair += 1;
+    const pendingIndex = nextPendingPairIndex(round, battleState.currentPair + 1);
+    if (pendingIndex >= 0) {
+      battleState.currentPair = pendingIndex;
     } else {
-      const matchWinners = round.pairs.map((match) => match.winner);
-      if (round.isPreliminary) {
-        const advancing = [...round.byes, ...matchWinners].map(byId);
-        const nextPairs = battleState.pairing === "smart" ? smartFirstRound(advancing) : randomFirstRound(advancing);
-        battleState.rounds.push({ size: round.targetSize, pairs: nextPairs });
-        battleState.currentRound += 1;
-        battleState.currentPair = 0;
-      } else if (matchWinners.length === 1) {
-        battleState.complete = true;
-        battleState.champion = matchWinners[0];
-        battleState.completedAt = new Date().toISOString();
+      const completedRound = battleState.currentRound;
+      if (!round.isPreliminary && round.pairs.length === 1) {
+        finishTournament(round);
       } else {
-        const nextPairs = [];
-        for (let i = 0; i < matchWinners.length; i += 2) {
-          nextPairs.push({
-            a: matchWinners[i],
-            b: matchWinners[i + 1],
-            winner: null,
-            reason: "淘汰赛晋级相遇"
-          });
-        }
-        battleState.rounds.push({ size: matchWinners.length, pairs: nextPairs });
-        battleState.currentRound += 1;
-        battleState.currentPair = 0;
+        buildFollowingRound(round);
+        battleState.checkpointPending = true;
+        battleState.checkpointRound = completedRound;
       }
     }
     saveBattle();
     if (battleState.complete) {
       renderResult();
+    } else if (battleState.checkpointPending) {
+      renderCheckpoint(battleState.checkpointRound);
     } else {
       renderBattle();
     }
@@ -381,10 +433,12 @@
     if (last.round < battleState.rounds.length - 1) battleState.rounds = battleState.rounds.slice(0, last.round + 1);
     const pair = battleState.rounds[last.round].pairs[last.pair];
     pair.winner = null;
+    delete pair.unfamiliar;
     battleState.currentRound = last.round;
     battleState.currentPair = last.pair;
     battleState.completedMatches -= 1;
     battleState.complete = false;
+    battleState.checkpointPending = false;
     delete battleState.champion;
     delete battleState.completedAt;
     saveBattle();
@@ -409,6 +463,91 @@
     return semi.pairs.flatMap((pair) => [byId(pair.a), byId(pair.b)]);
   }
 
+  function bracketStages() {
+    const bracketStart = battleState.rounds.findIndex((round) => !round.isPreliminary && round.size === 64);
+    if (bracketStart < 0) return null;
+    const bracketRounds = battleState.rounds.slice(bracketStart);
+    const initial = bracketRounds[0].pairs.flatMap((pair) => [pair.a, pair.b]);
+    const stages = [initial];
+    bracketRounds.forEach((round) => stages.push(round.pairs.map((pair) => pair.winner || null)));
+    const expectedStages = Math.log2(initial.length) + 1;
+    while (stages.length < expectedStages) {
+      stages.push(Array(initial.length / (2 ** stages.length)).fill(null));
+    }
+    return stages;
+  }
+
+  function renderBracket(container) {
+    const stages = bracketStages();
+    if (!container || !stages) return;
+    const preliminary = battleState.rounds.find((round) => round.isPreliminary);
+    const playIn = preliminary ? `
+      <div class="playin-summary">
+        <b>${preliminary.size} → ${preliminary.targetSize} 附加赛</b>
+        <div>${preliminary.pairs.map((pair) => {
+          const winner = pair.winner ? byId(pair.winner).title : "待定";
+          return `<span>${byId(pair.a).title} / ${byId(pair.b).title}<i>→ ${winner}</i></span>`;
+        }).join("")}</div>
+      </div>` : "";
+    const board = stages.map((ids, stageIndex) => {
+      const count = ids.length;
+      const label = count === 1 ? "冠军" : (count === 2 ? "决赛" : `${count}强`);
+      const entries = ids.map((id) => {
+        const song = id ? byId(id) : null;
+        const title = song?.title || "待定";
+        const classes = ["bracket-entry"];
+        if (!id) classes.push("pending");
+        if (id === UNKNOWN_ID) classes.push("unknown");
+        return `<div class="${classes.join(" ")}" style="--span:${2 ** stageIndex}"><span>${title}</span></div>`;
+      }).join("");
+      return `<div class="bracket-column" data-stage="${stageIndex}"><b class="bracket-column-head">${label}</b>${entries}</div>`;
+    }).join("");
+    container.innerHTML = `${playIn}<div class="bracket-board">${board}</div>`;
+  }
+
+  function renderCheckpoint(roundIndex) {
+    const round = battleState.rounds[roundIndex];
+    const targetSize = round.isPreliminary ? round.targetSize : round.size / 2;
+    const winnerIds = round.isPreliminary
+      ? [...round.byes, ...round.pairs.map((pair) => pair.winner)]
+      : round.pairs.map((pair) => pair.winner);
+    const songsThrough = winnerIds.filter((id) => id && id !== UNKNOWN_ID).map(byId);
+    const vacantCount = targetSize - songsThrough.length;
+    $("#checkpointRoundLabel").textContent = `${round.size} → ${targetSize}`;
+    $("#advancerTitle").textContent = `当前 ${targetSize} 强`;
+    $("#advancerCount").textContent = vacantCount ? `${songsThrough.length} 首 · ${vacantCount} 轮空` : `${songsThrough.length} 首`;
+    $("#advancerList").innerHTML = songsThrough.map((song, index) => `
+      <div class="advancer-item"><span>${String(index + 1).padStart(2, "0")}</span><div><b>${song.title}</b><small>${song.release}</small></div></div>
+    `).join("");
+    renderBracket($("#checkpointBracket"));
+    showView("checkpoint");
+  }
+
+  function continueAfterCheckpoint() {
+    battleState.checkpointPending = false;
+    const round = battleState.rounds[battleState.currentRound];
+    const pendingIndex = nextPendingPairIndex(round);
+    if (pendingIndex >= 0) {
+      battleState.currentPair = pendingIndex;
+      saveBattle();
+      showView("battle");
+      renderBattle();
+      return;
+    }
+    if (!round.isPreliminary && round.pairs.length === 1) {
+      finishTournament(round);
+      saveBattle();
+      renderResult();
+      return;
+    }
+    const completedRound = battleState.currentRound;
+    buildFollowingRound(round);
+    battleState.checkpointPending = true;
+    battleState.checkpointRound = completedRound;
+    saveBattle();
+    renderCheckpoint(completedRound);
+  }
+
   function renderResult() {
     if (!battleState?.complete) return;
     const champion = byId(battleState.champion);
@@ -429,6 +568,7 @@
         <span>${song.id === champion.id ? "CHAMPION" : `FINALIST 0${index + 1}`}</span>
         <b>${song.title}</b>
       </div>`).join("");
+    renderBracket($("#finalBracket"));
     showView("result");
     updateContinueButton();
   }
@@ -616,7 +756,7 @@
 
     ctx.fillStyle = "#7c6f86";
     ctx.font = "19px 'Microsoft YaHei'";
-    ctx.fillText(`数据仅保存在本机 · 三平台收藏更新于 ${meta.dataUpdatedAt} · 结果生成 ${new Date().toLocaleDateString("zh-CN")}`, 80, H - 60);
+    ctx.fillText(`选择仅保存在本机 · 结果生成 ${new Date().toLocaleDateString("zh-CN")}`, 80, H - 60);
     ctx.textAlign = "right";
     ctx.fillStyle = "#6d28d9";
     ctx.font = "900 23px Arial";
@@ -674,7 +814,9 @@
     els.continueBattle.addEventListener("click", () => {
       battleState = safeLoad();
       if (!battleState) return updateContinueButton();
-      if (battleState.complete) renderResult(); else { showView("battle"); renderBattle(); }
+      if (battleState.complete) renderResult();
+      else if (battleState.checkpointPending) renderCheckpoint(battleState.checkpointRound);
+      else { showView("battle"); renderBattle(); }
     });
     els.sizeOptions.addEventListener("click", (event) => {
       const button = event.target.closest("[data-size]");
@@ -694,9 +836,12 @@
     els.launchBattle.addEventListener("click", beginBattle);
     els.choiceA.addEventListener("click", () => chooseSong(currentPair()?.a));
     els.choiceB.addEventListener("click", () => chooseSong(currentPair()?.b));
+    $("#unknownChoice").addEventListener("click", () => chooseSong(UNKNOWN_ID));
     els.undoChoice.addEventListener("click", undoChoice);
     $("#pauseBattle").addEventListener("click", () => { saveBattle(); updateContinueButton(); showView("home"); });
     $("#restartBattle").addEventListener("click", restart);
+    $("#continueRound").addEventListener("click", continueAfterCheckpoint);
+    $("#checkpointHome").addEventListener("click", () => { saveBattle(); updateContinueButton(); showView("home"); });
     $("#makePoster").addEventListener("click", openPoster);
     $("#downloadPoster").addEventListener("click", downloadPoster);
     $("#sharePoster").addEventListener("click", sharePoster);
@@ -710,7 +855,7 @@
 
   function init() {
     $("#songCountStat").textContent = songs.length;
-    $("#allSizeLabel").textContent = `全曲库 · ${songs.length - 1} 次`;
+    $("#allSizeLabel").textContent = `全曲库 · 最多 ${songs.length - 1} 次`;
     renderFilters();
     updatePoolPreview();
     updateContinueButton();

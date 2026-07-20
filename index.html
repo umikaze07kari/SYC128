@@ -28,13 +28,13 @@
         <div class="hero-copy">
           <p class="eyebrow">SYC SONG BATTLE · 2026</p>
           <h1 id="homeTitle">听见每一面，<br><span>选出唯一偏爱。</span></h1>
-          <p class="hero-desc">从单依纯完整曲库中进行一对一选择。系统会优先安排相似类型相遇，同时依据三平台收藏分散种子，直到你的冠军诞生。</p>
+          <p class="hero-desc">从单依纯完整曲库中进行一对一选择。系统会优先安排相似类型相遇，同时分散热门种子，直到你的冠军诞生。</p>
           <div class="hero-actions">
             <button class="primary-button" id="startSetup" type="button">开始选择 <span>→</span></button>
             <button class="ghost-button" id="continueBattle" type="button" hidden>继续上次进度</button>
           </div>
           <div class="quick-stats" aria-label="应用特点">
-            <div><strong id="songCountStat">71</strong><span>首完整曲库</span></div>
+            <div><strong id="songCountStat">69</strong><span>首完整曲库</span></div>
             <div><strong>LOCAL</strong><span>进度仅存本机</span></div>
             <div><strong>PNG</strong><span>一键生成长图</span></div>
           </div>
@@ -73,7 +73,7 @@
             <div class="field-label"><span>对战规模</span><small>规模越大，越接近灵魂拷问</small></div>
             <div class="segmented" id="sizeOptions">
               <button class="selected" type="button" data-size="64"><b>64</b><span>标准局 · 63 次</span></button>
-              <button type="button" data-size="all"><b>全部</b><span id="allSizeLabel">全曲库 · 70 次</span></button>
+              <button type="button" data-size="all"><b>全部</b><span id="allSizeLabel">全曲库 · 最多 68 次</span></button>
             </div>
           </div>
 
@@ -107,7 +107,7 @@
         <aside class="pool-preview">
           <div class="pool-preview-head"><div><p class="eyebrow">LIVE PREVIEW</p><h3>本次入选</h3></div><span id="poolCount">64 / 64</span></div>
           <div class="mini-list" id="poolPreview"></div>
-          <p class="data-note">收藏量来自用户提供的单纯盒子截图，单位为万，更新于 2026-07；“—”表示截图暂无数据。可在 <code>songs.js</code> 中继续维护。</p>
+          <p class="data-note">歌曲出处、短歌词摘录与听感提示可在 <code>songs.js</code> 中继续维护。所有选择和进度仅保存在本机。</p>
           <button class="primary-button wide" id="launchBattle" type="button">生成对阵并开始 <span>→</span></button>
         </aside>
       </div>
@@ -123,16 +123,40 @@
         <button class="text-button" id="undoChoice" type="button" disabled>撤回</button>
       </div>
       <div class="progress-track"><span id="battleProgress"></span></div>
-      <p class="progress-copy"><span id="progressText">1 / 31</span><span id="saveStatus">已自动保存</span></p>
+      <p class="progress-copy"><span id="progressText">本轮 1 / 32</span><span id="saveStatus">已自动保存</span></p>
 
       <div class="battle-stage">
         <div class="battle-prompt"><span>THIS OR THAT</span><h2 id="battleTitle">这一刻，你更偏爱哪一首？</h2><p>点击卡片完成选择，不需要考虑“正确答案”。</p></div>
         <div class="song-duel" id="songDuel">
           <button class="song-card song-card-a" id="choiceA" type="button"></button>
-          <div class="versus" aria-hidden="true"><span>OR</span></div>
+          <div class="duel-center">
+            <span class="versus" aria-hidden="true">OR</span>
+            <button class="unknown-button" id="unknownChoice" type="button"><b>?</b><span>都不熟悉</span></button>
+          </div>
           <button class="song-card song-card-b" id="choiceB" type="button"></button>
         </div>
         <p class="match-reason" id="matchReason"></p>
+      </div>
+    </section>
+
+    <section class="view" id="checkpointView" aria-labelledby="checkpointTitle">
+      <div class="checkpoint-head">
+        <p class="eyebrow">ROUND COMPLETE</p>
+        <span id="checkpointRoundLabel">64 → 32</span>
+        <h2 id="checkpointTitle">这一轮选完了</h2>
+        <p>先看看目前留下了谁。你可以慢慢检查晋级图，再继续下一轮。</p>
+      </div>
+      <section class="advance-card">
+        <div class="card-heading"><div><p class="eyebrow">ADVANCERS</p><h3 id="advancerTitle">当前 32 强</h3></div><span id="advancerCount">32 首</span></div>
+        <div class="advancer-list" id="advancerList"></div>
+      </section>
+      <section class="bracket-section checkpoint-bracket-section">
+        <div class="card-heading"><div><p class="eyebrow">CURRENT BRACKET</p><h3>当前完整晋级图</h3></div><span>可上下滚动查看</span></div>
+        <div class="bracket-shell" id="checkpointBracket"></div>
+      </section>
+      <div class="checkpoint-actions">
+        <button class="primary-button" id="continueRound" type="button">继续下一轮 <span>→</span></button>
+        <button class="ghost-button" id="checkpointHome" type="button">暂停，回到首页</button>
       </div>
     </section>
 
@@ -140,7 +164,7 @@
       <div class="result-hero">
         <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
         <p class="eyebrow">YOUR PURE PICK · CHAMPION</p>
-        <p class="result-kicker">经过 <span id="resultMatchCount">31</span> 次心动选择</p>
+        <p class="result-kicker">完成 <span id="resultMatchCount">63</span> 次主动判断</p>
         <h2 id="resultTitle">你的本命歌曲是</h2>
         <div class="champion-disc"><div><span>NO.1</span><b id="championTitle">—</b><small id="championMeta">—</small></div></div>
         <p class="champion-quote" id="championQuote"></p>
@@ -157,6 +181,12 @@
         </section>
       </div>
 
+      <section class="bracket-section final-bracket-section">
+        <div class="card-heading"><div><p class="eyebrow">FULL BRACKET</p><h3>完整晋级图</h3></div><span>从 64 强到冠军</span></div>
+        <p class="bracket-help">前两轮字号稍小，越接近冠军字号越大；手机端可直接纵向浏览完整路径。</p>
+        <div class="bracket-shell" id="finalBracket"></div>
+      </section>
+
       <div class="result-actions">
         <button class="primary-button" id="makePoster" type="button">生成分享长图 <span>↗</span></button>
         <button class="ghost-button" id="restartBattle" type="button">再玩一次</button>
@@ -171,7 +201,8 @@
     <p>这是一场单败淘汰式歌曲二选一。输掉的歌并不代表“不好”，只代表在那一次相遇里，你选择了另一首。</p>
     <ul>
       <li><b>智能首轮：</b>优先让来源、演唱形式相近的歌相遇。</li>
-      <li><b>种子保护：</b>综合热度靠前的歌曲分散到不同区，避免过早碰面。</li>
+      <li><b>种子保护：</b>热门歌曲会分散到不同区，避免过早碰面。</li>
+      <li><b>都不熟悉：</b>两首均不代表偏好，本组记为轮空，不会随机替你选择。</li>
       <li><b>本地优先：</b>所有进度只保存在你的浏览器，不上传任何数据。</li>
     </ul>
     <button class="primary-button wide" data-close-modal type="button">知道了</button>

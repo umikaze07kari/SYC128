@@ -1,7 +1,7 @@
 {
   "name": "PURE PICK · 单依纯歌曲 Battle",
   "short_name": "PURE PICK",
-  "description": "从 71 首单依纯完整曲库中二选一，选出你的本命歌曲。",
+  "description": "从 69 首单依纯完整曲库中二选一，选出你的本命歌曲。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
