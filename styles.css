@@ -189,6 +189,8 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding-bottom: ca
 .song-card-sub { margin: 0 0 15px; color: rgba(255,255,255,.75); font-size: 10px; }
 .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .song-tag { padding: 6px 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(255,255,255,.12); font-size: 9px; }
+.platform-favorites { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 12px; }
+.platform-favorites span { overflow: hidden; padding: 6px 4px; border-radius: 8px; color: rgba(255,255,255,.8); background: rgba(255,255,255,.1); font-size: 8px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .pick-call { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.2); font-size: 11px; font-weight: 900; letter-spacing: .04em; }
 .pick-call span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--purple-900); background: var(--yellow); font-size: 16px; }
 .versus { position: absolute; z-index: 5; left: 50%; top: 50%; display: grid; place-items: center; width: 58px; height: 58px; border: 7px solid #fbf9ff; border-radius: 50%; background: var(--ink); color: #fff; transform: translate(-50%, -50%) rotate(-8deg); box-shadow: 0 8px 22px rgba(33,21,47,.25); }
@@ -270,7 +272,7 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding-bottom: ca
   .pool-preview { position: static; padding: 20px; }
   .mini-list { max-height: 270px; }
   .song-duel { grid-template-columns: 1fr 1fr; gap: 13px; }
-  .song-card, .song-card-inner { min-height: 330px; }
+  .song-card, .song-card-inner { min-height: 380px; }
   .song-card { border-radius: 23px; }
   .song-card-inner { padding: 18px 15px; }
   .song-letter { font-size: 52px; }
@@ -305,7 +307,7 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding-bottom: ca
   .battle-stage { min-height: calc(100svh - 145px); padding-top: 18px; justify-content: flex-start; }
   .battle-prompt h2 { font-size: 25px; }
   .song-duel { margin-top: 27px; gap: 9px; }
-  .song-card, .song-card-inner { min-height: 350px; }
+  .song-card, .song-card-inner { min-height: 390px; }
   .song-card-inner { padding: 15px 12px; }
   .song-card-title { font-size: clamp(20px, 6.2vw, 27px); }
   .song-card-sub { min-height: 25px; }

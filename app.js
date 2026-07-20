@@ -3,7 +3,7 @@
 
   const songs = window.SONG_CATALOG || [];
   const meta = window.SONG_META || {};
-  const STORAGE_KEY = "pure-pick-battle-v1";
+  const STORAGE_KEY = "pure-pick-battle-v2";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -38,7 +38,7 @@
   };
 
   const setupState = {
-    size: 32,
+    size: 64,
     sources: new Set(Object.keys(meta.source || {})),
     vocals: new Set(Object.keys(meta.vocal || {})),
     pairing: "smart"
@@ -63,7 +63,7 @@
   function safeLoad() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (!saved || saved.version !== 1 || !Array.isArray(saved.rounds)) return null;
+      if (!saved || saved.version !== 2 || !Array.isArray(saved.rounds)) return null;
       return saved;
     } catch {
       return null;
@@ -101,12 +101,25 @@
     return songs.filter((song) => setupState.sources.has(song.source) && setupState.vocals.has(song.vocal));
   }
 
+  function rankValue(song) {
+    return song.totalFavoritesWan ?? -1;
+  }
+
+  function formatFavorites(value) {
+    return value == null ? "—" : `${Number(value).toFixed(Number(value) % 1 ? 1 : 0)}w`;
+  }
+
+  function targetPoolSize(availableCount = filteredSongs().length) {
+    return setupState.size === "all" ? availableCount : setupState.size;
+  }
+
   function selectPool() {
-    const available = filteredSongs().sort((a, b) => b.popularity - a.popularity);
-    if (available.length <= setupState.size) return available;
+    const available = filteredSongs().sort((a, b) => rankValue(b) - rankValue(a));
+    const targetSize = targetPoolSize(available.length);
+    if (available.length <= targetSize) return available;
 
     // 先保留高热度候选，再以“来源 + 情绪”轮转补位，避免 16 首模式过于单一。
-    const picked = available.slice(0, Math.ceil(setupState.size / 2));
+    const picked = available.slice(0, Math.ceil(targetSize / 2));
     const remaining = available.filter((song) => !picked.includes(song));
     const groups = new Map();
     remaining.forEach((song) => {
@@ -114,9 +127,9 @@
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(song);
     });
-    while (picked.length < setupState.size && groups.size) {
+    while (picked.length < targetSize && groups.size) {
       [...groups.entries()].forEach(([key, group]) => {
-        if (picked.length < setupState.size && group.length) picked.push(group.shift());
+        if (picked.length < targetSize && group.length) picked.push(group.shift());
         if (!group.length) groups.delete(key);
       });
     }
@@ -126,16 +139,17 @@
   function updatePoolPreview() {
     const available = filteredSongs();
     const pool = selectPool();
-    els.poolCount.textContent = `${pool.length} / ${setupState.size}`;
+    const targetSize = targetPoolSize(available.length);
+    els.poolCount.textContent = setupState.size === "all" ? `${pool.length} / 全部` : `${pool.length} / ${targetSize}`;
     els.poolPreview.innerHTML = pool.map((song, index) => `
       <div class="mini-song">
         <span>${String(index + 1).padStart(2, "0")}</span>
         <b>${song.title}</b>
-        <small>${song.sourceLabel} · ${song.popularity}</small>
+        <small>${song.sourceLabel} · ${formatFavorites(song.totalFavoritesWan)}</small>
       </div>`).join("");
-    const enough = available.length >= setupState.size;
+    const enough = available.length >= 64 && pool.length >= targetSize;
     els.launchBattle.disabled = !enough;
-    els.launchBattle.firstChild.textContent = enough ? "生成对阵并开始 " : `还需选择 ${setupState.size - available.length} 首 `;
+    els.launchBattle.firstChild.textContent = enough ? "生成对阵并开始 " : `至少还需 ${Math.max(0, 64 - available.length)} 首 `;
   }
 
   function toggleFilter(button) {
@@ -179,8 +193,8 @@
   }
 
   function smartFirstRound(pool) {
-    const ranked = [...pool].sort((a, b) => b.popularity - a.popularity);
-    const seedCount = Math.max(2, Math.floor(pool.length / 4));
+    const ranked = [...pool].sort((a, b) => rankValue(b) - rankValue(a));
+    const seedCount = Math.min(Math.max(1, Math.floor(pool.length / 4)), Math.floor(pool.length / 2));
     const seeds = ranked.slice(0, seedCount);
     const candidates = ranked.slice(seedCount);
     const seedPairs = seeds.map((seed) => {
@@ -206,7 +220,8 @@
     // 常用的种子蛇形顺序；再与普通对局交错，让头部种子尽量分处不同小区。
     const seedOrders = {
       4: [1, 4, 2, 3],
-      8: [1, 8, 4, 5, 2, 7, 3, 6]
+      8: [1, 8, 4, 5, 2, 7, 3, 6],
+      16: [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11]
     };
     const order = seedOrders[seedCount] || seeds.map((_, index) => index + 1);
     const orderedSeeds = order.map((rank) => seedPairs.find((pair) => pair.seedRank === rank));
@@ -229,15 +244,33 @@
 
   function beginBattle() {
     const pool = selectPool();
-    if (pool.length < setupState.size) return;
-    const firstPairs = setupState.pairing === "smart" ? smartFirstRound(pool) : randomFirstRound(pool);
+    if (pool.length < 64) return;
+    const bracketSize = 2 ** Math.floor(Math.log2(pool.length));
+    let firstRound;
+    if (pool.length === bracketSize) {
+      const firstPairs = setupState.pairing === "smart" ? smartFirstRound(pool) : randomFirstRound(pool);
+      firstRound = { size: pool.length, pairs: firstPairs };
+    } else {
+      const playInMatchCount = pool.length - bracketSize;
+      const ranked = [...pool].sort((a, b) => rankValue(b) - rankValue(a));
+      const playInSongs = ranked.slice(-playInMatchCount * 2);
+      const byeSongs = ranked.slice(0, ranked.length - playInMatchCount * 2);
+      const playInPairs = setupState.pairing === "smart" ? smartFirstRound(playInSongs) : randomFirstRound(playInSongs);
+      firstRound = {
+        size: pool.length,
+        targetSize: bracketSize,
+        isPreliminary: true,
+        byes: byeSongs.map((song) => song.id),
+        pairs: playInPairs
+      };
+    }
     battleState = {
-      version: 1,
+      version: 2,
       createdAt: new Date().toISOString(),
       poolSize: pool.length,
       pairing: setupState.pairing,
       selectedSongIds: pool.map((song) => song.id),
-      rounds: [{ size: pool.length, pairs: firstPairs }],
+      rounds: [firstRound],
       currentRound: 0,
       currentPair: 0,
       completedMatches: 0,
@@ -254,8 +287,9 @@
     return battleState?.rounds[battleState.currentRound]?.pairs[battleState.currentPair];
   }
 
-  function roundChinese(roundIndex, size) {
-    const labels = { 32: "32 强 · 第一轮", 16: "16 强 · 第二轮", 8: "8 强 · 四分之一决赛", 4: "4 强 · 半决赛", 2: "冠军争夺战" };
+  function roundChinese(roundIndex, size, round) {
+    if (round?.isPreliminary) return `${size} 进 ${round.targetSize} · 附加赛`;
+    const labels = { 64: "64 强 · 第一轮", 32: "32 强 · 第二轮", 16: "16 强 · 第三轮", 8: "8 强 · 四分之一决赛", 4: "4 强 · 半决赛", 2: "冠军争夺战" };
     return labels[size] || `第 ${roundIndex + 1} 轮`;
   }
 
@@ -263,11 +297,12 @@
     const letter = /^[a-z]/i.test(song.title) ? song.title.charAt(0) : song.title.charAt(0);
     return `
       <div class="song-card-inner" style="--card-gradient:linear-gradient(145deg,${song.colors[0]},${song.colors[1]})">
-        <div class="song-card-top"><span class="song-letter">${letter}</span><span class="heat">✦ 综合热度 ${song.popularity}</span></div>
+        <div class="song-card-top"><span class="song-letter">${letter}</span><span class="heat">✦ 全平台 ${formatFavorites(song.totalFavoritesWan)}</span></div>
         <div>
           <h3 class="song-card-title">${song.title}</h3>
           <p class="song-card-sub">${song.release} · 数据更新 ${song.updatedAt}</p>
           <div class="tag-row"><span class="song-tag">${song.sourceLabel}</span><span class="song-tag">${song.vocalLabel}</span><span class="song-tag">${song.mood}</span></div>
+          <div class="platform-favorites"><span>QQ ${formatFavorites(song.platformFavorites.qq)}</span><span>网易 ${formatFavorites(song.platformFavorites.netease)}</span><span>酷狗 ${formatFavorites(song.platformFavorites.kugou)}</span></div>
           <div class="pick-call">选择这一首 <span>${side === "a" ? "↖" : "↗"}</span></div>
         </div>
       </div>`;
@@ -287,8 +322,8 @@
     els.choiceB.innerHTML = songCardMarkup(b, "b");
     els.choiceA.style.setProperty("--card-gradient", `linear-gradient(145deg,${a.colors[0]},${a.colors[1]})`);
     els.choiceB.style.setProperty("--card-gradient", `linear-gradient(145deg,${b.colors[0]},${b.colors[1]})`);
-    els.roundLabel.textContent = round.size === 2 ? "THE FINAL" : `ROUND OF ${round.size}`;
-    els.roundTitle.textContent = roundChinese(battleState.currentRound, round.size);
+    els.roundLabel.textContent = round.isPreliminary ? "PLAY-IN ROUND" : (round.size === 2 ? "THE FINAL" : `ROUND OF ${round.size}`);
+    els.roundTitle.textContent = roundChinese(battleState.currentRound, round.size, round);
     els.progressText.textContent = `${battleState.completedMatches + 1} / ${battleState.totalMatches}`;
     els.battleProgress.style.width = `${(battleState.completedMatches / battleState.totalMatches) * 100}%`;
     els.matchReason.textContent = pair.reason;
@@ -306,22 +341,28 @@
     if (battleState.currentPair < round.pairs.length - 1) {
       battleState.currentPair += 1;
     } else {
-      const winners = round.pairs.map((match) => match.winner);
-      if (winners.length === 1) {
+      const matchWinners = round.pairs.map((match) => match.winner);
+      if (round.isPreliminary) {
+        const advancing = [...round.byes, ...matchWinners].map(byId);
+        const nextPairs = battleState.pairing === "smart" ? smartFirstRound(advancing) : randomFirstRound(advancing);
+        battleState.rounds.push({ size: round.targetSize, pairs: nextPairs });
+        battleState.currentRound += 1;
+        battleState.currentPair = 0;
+      } else if (matchWinners.length === 1) {
         battleState.complete = true;
-        battleState.champion = winners[0];
+        battleState.champion = matchWinners[0];
         battleState.completedAt = new Date().toISOString();
       } else {
         const nextPairs = [];
-        for (let i = 0; i < winners.length; i += 2) {
+        for (let i = 0; i < matchWinners.length; i += 2) {
           nextPairs.push({
-            a: winners[i],
-            b: winners[i + 1],
+            a: matchWinners[i],
+            b: matchWinners[i + 1],
             winner: null,
             reason: "淘汰赛晋级相遇"
           });
         }
-        battleState.rounds.push({ size: winners.length, pairs: nextPairs });
+        battleState.rounds.push({ size: matchWinners.length, pairs: nextPairs });
         battleState.currentRound += 1;
         battleState.currentPair = 0;
       }
@@ -357,7 +398,7 @@
       const match = round.pairs.find((pair) => pair.winner === battleState.champion);
       if (!match) return null;
       const opponentId = match.a === battleState.champion ? match.b : match.a;
-      return { round: round.size === 2 ? "决赛" : `${round.size} 强`, opponent: byId(opponentId), index };
+      return { round: round.isPreliminary ? "附加赛" : (round.size === 2 ? "决赛" : `${round.size} 强`), opponent: byId(opponentId), index };
     }).filter(Boolean);
   }
 
@@ -420,7 +461,8 @@
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
     const W = 1440;
-    const H = 2400;
+    const preliminary = battleState.rounds.find((round) => round.isPreliminary);
+    const H = preliminary ? 3600 : 3450;
     canvas.width = W;
     canvas.height = H;
     const champion = byId(battleState.champion);
@@ -513,15 +555,32 @@
     ctx.font = "20px 'Microsoft YaHei', sans-serif";
     ctx.fillText("每一条线，都是那一刻真实的偏爱。", 270, 1169);
 
-    const initial = battleState.rounds[0].pairs.flatMap((pair) => [pair.a, pair.b]);
+    if (preliminary) {
+      ctx.fillStyle = "#6d28d9";
+      ctx.font = "900 15px 'Microsoft YaHei'";
+      ctx.fillText(`${preliminary.size} 进 ${preliminary.targetSize} · 附加赛`, 80, 1210);
+      preliminary.pairs.forEach((pair, index) => {
+        const x = 80 + (index % 4) * 322;
+        const y = 1230 + Math.floor(index / 4) * 62;
+        const loserId = pair.a === pair.winner ? pair.b : pair.a;
+        fillRoundRect(ctx, x, y, 295, 47, 12, "rgba(255,255,255,.88)");
+        ctx.fillStyle = "#4c1d95";
+        ctx.font = "700 14px 'Microsoft YaHei'";
+        ctx.fillText(fitText(ctx, `${byId(pair.winner).title}  胜  ${byId(loserId).title}`, 265), x + 15, y + 29);
+      });
+    }
+
+    const bracketStart = preliminary ? battleState.rounds.indexOf(preliminary) + 1 : 0;
+    const bracketRounds = battleState.rounds.slice(bracketStart);
+    const initial = bracketRounds[0].pairs.flatMap((pair) => [pair.a, pair.b]);
     const stages = [initial];
-    battleState.rounds.forEach((round) => stages.push(round.pairs.map((pair) => pair.winner)));
-    const labels = [`${battleState.poolSize}强`, ...battleState.rounds.map((round) => round.size === 2 ? "冠军" : `${round.size / 2}强`)];
+    bracketRounds.forEach((round) => stages.push(round.pairs.map((pair) => pair.winner)));
+    const labels = [`${initial.length}强`, ...bracketRounds.map((round) => round.size === 2 ? "冠军" : `${round.size / 2}强`)];
     const bracketX = 80;
-    const bracketY = 1240;
-    const colW = 206;
-    const rowGap = 34;
-    const boxW = 180;
+    const bracketY = preliminary ? 1390 : 1240;
+    const colW = 190;
+    const rowGap = 32;
+    const boxW = 165;
     const boxH = 27;
 
     stages.forEach((stage, stageIndex) => {
@@ -535,7 +594,7 @@
         const isChamp = songId === champion.id && stageIndex === stages.length - 1;
         fillRoundRect(ctx, x, yCenter - boxH / 2, boxW, boxH, 8, isChamp ? "#6d28d9" : "rgba(255,255,255,.9)");
         ctx.fillStyle = isChamp ? "#fff" : "#35263f";
-        ctx.font = `${isChamp ? "900" : "700"} 14px 'Microsoft YaHei'`;
+        ctx.font = `${isChamp ? "900" : "700"} 13px 'Microsoft YaHei'`;
         ctx.fillText(fitText(ctx, byId(songId).title, boxW - 20), x + 10, yCenter + 5);
 
         if (stageIndex > 0) {
@@ -557,11 +616,11 @@
 
     ctx.fillStyle = "#7c6f86";
     ctx.font = "19px 'Microsoft YaHei'";
-    ctx.fillText(`数据仅保存在本机 · 综合热度更新于 ${meta.dataUpdatedAt} · 结果生成 ${new Date().toLocaleDateString("zh-CN")}`, 80, 2340);
+    ctx.fillText(`数据仅保存在本机 · 三平台收藏更新于 ${meta.dataUpdatedAt} · 结果生成 ${new Date().toLocaleDateString("zh-CN")}`, 80, H - 60);
     ctx.textAlign = "right";
     ctx.fillStyle = "#6d28d9";
     ctx.font = "900 23px Arial";
-    ctx.fillText("PURE PICK  ✦", 1360, 2340);
+    ctx.fillText("PURE PICK  ✦", 1360, H - 60);
     ctx.textAlign = "left";
 
     canvas.toBlob((blob) => { posterBlob = blob; }, "image/png", .96);
@@ -620,7 +679,7 @@
     els.sizeOptions.addEventListener("click", (event) => {
       const button = event.target.closest("[data-size]");
       if (!button) return;
-      setupState.size = Number(button.dataset.size);
+      setupState.size = button.dataset.size === "all" ? "all" : Number(button.dataset.size);
       $$('[data-size]', els.sizeOptions).forEach((item) => item.classList.toggle("selected", item === button));
       updatePoolPreview();
     });
@@ -651,6 +710,7 @@
 
   function init() {
     $("#songCountStat").textContent = songs.length;
+    $("#allSizeLabel").textContent = `全曲库 · ${songs.length - 1} 次`;
     renderFilters();
     updatePoolPreview();
     updateContinueButton();

@@ -28,13 +28,13 @@
         <div class="hero-copy">
           <p class="eyebrow">SYC SONG BATTLE · 2026</p>
           <h1 id="homeTitle">听见每一面，<br><span>选出唯一偏爱。</span></h1>
-          <p class="hero-desc">从单依纯曲库中进行一对一选择。系统会优先安排相似类型相遇，同时分散高热度种子，直到你的冠军诞生。</p>
+          <p class="hero-desc">从单依纯完整曲库中进行一对一选择。系统会优先安排相似类型相遇，同时依据三平台收藏分散种子，直到你的冠军诞生。</p>
           <div class="hero-actions">
             <button class="primary-button" id="startSetup" type="button">开始选择 <span>→</span></button>
             <button class="ghost-button" id="continueBattle" type="button" hidden>继续上次进度</button>
           </div>
           <div class="quick-stats" aria-label="应用特点">
-            <div><strong id="songCountStat">32</strong><span>首精选歌曲</span></div>
+            <div><strong id="songCountStat">71</strong><span>首完整曲库</span></div>
             <div><strong>LOCAL</strong><span>进度仅存本机</span></div>
             <div><strong>PNG</strong><span>一键生成长图</span></div>
           </div>
@@ -55,7 +55,7 @@
       </div>
 
       <section class="feature-strip" aria-label="玩法介绍">
-        <article><span class="feature-no">01</span><div><b>选一组曲库</b><p>16 或 32 首，也可以按来源与演唱形式筛选。</p></div></article>
+        <article><span class="feature-no">01</span><div><b>选一组曲库</b><p>64 强或全曲库，也可以按来源与演唱形式筛选。</p></div></article>
         <article><span class="feature-no">02</span><div><b>凭直觉二选一</b><p>不用打分，每次只回答“此刻更喜欢哪首”。</p></div></article>
         <article><span class="feature-no">03</span><div><b>带走你的结果</b><p>生成时髦的紫色系对战长图，保存或分享。</p></div></article>
       </section>
@@ -72,8 +72,8 @@
           <div class="field-group">
             <div class="field-label"><span>对战规模</span><small>规模越大，越接近灵魂拷问</small></div>
             <div class="segmented" id="sizeOptions">
-              <button type="button" data-size="16"><b>16</b><span>轻量局 · 15 次</span></button>
-              <button class="selected" type="button" data-size="32"><b>32</b><span>完整局 · 31 次</span></button>
+              <button class="selected" type="button" data-size="64"><b>64</b><span>标准局 · 63 次</span></button>
+              <button type="button" data-size="all"><b>全部</b><span id="allSizeLabel">全曲库 · 70 次</span></button>
             </div>
           </div>
 
@@ -105,9 +105,9 @@
         </div>
 
         <aside class="pool-preview">
-          <div class="pool-preview-head"><div><p class="eyebrow">LIVE PREVIEW</p><h3>本次入选</h3></div><span id="poolCount">32 / 32</span></div>
+          <div class="pool-preview-head"><div><p class="eyebrow">LIVE PREVIEW</p><h3>本次入选</h3></div><span id="poolCount">64 / 64</span></div>
           <div class="mini-list" id="poolPreview"></div>
-          <p class="data-note">热度为演示用综合指数，不代表实时播放或收藏量。可在 <code>songs.js</code> 中维护数据与更新时间。</p>
+          <p class="data-note">收藏量来自用户提供的单纯盒子截图，单位为万，更新于 2026-07；“—”表示截图暂无数据。可在 <code>songs.js</code> 中继续维护。</p>
           <button class="primary-button wide" id="launchBattle" type="button">生成对阵并开始 <span>→</span></button>
         </aside>
       </div>
