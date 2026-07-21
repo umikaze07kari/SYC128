@@ -1,5 +1,5 @@
-const CACHE = "dan-island-odyssey-v27";
-const ASSETS = ["./", "./index.html", "./leaderboard.html", "./styles.css", "./songs.js", "./config.js", "./vendor/qrcode.js", "./app.js", "./leaderboard.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg"];
+const CACHE = "dan-island-odyssey-v38";
+const ASSETS = ["./", "./index.html", "./leaderboard.html", "./styles.css", "./songs.js", "./config.js", "./vendor/qrcode.js", "./app.js", "./leaderboard.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg", "./assets/covers/default.jpg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

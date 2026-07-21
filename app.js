@@ -26,12 +26,13 @@
     { key: "rapListen", group: "other", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
     { key: "ourSong", group: "other", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
     { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
-    { key: "gala", group: "other", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
+    { key: "gala", group: "gala", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
   ];
   const COLLECTION_GROUPS = [
     { key: "ost", title: "影视原声", note: "影视歌曲" },
     { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
-    { key: "other", title: "其他音乐综艺", note: "更多现场" }
+    { key: "other", title: "其他音乐综艺", note: "更多现场" },
+    { key: "gala", title: "晚会舞台", note: "特别舞台" }
   ];
   const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound", "dramaSongs", "chinaMusic", "concert"];
   const ROUND_LABELS = {
@@ -337,7 +338,7 @@
     const charmKind = charmKinds[cardIndex % charmKinds.length];
     return `
       <button class="cover-choice source-${song.source}${lyric ? "" : " no-lyric"}" type="button" data-song-id="${song.id}">
-        <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}${song.vocal === "collab" ? " · 合唱" : ""}</em></div>
+        <div class="cover-frame">${imageMarkup(song)}</div>
         <div class="choice-info">
           <span class="card-charms charm-${charmKind}" aria-hidden="true"><i></i><i></i><i></i></span>
           <h3><span>${song.title}</span></h3>
@@ -503,7 +504,7 @@
     const revivalDuel = state.phase === "duel8Revival";
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : revivalDuel ? "胜者拿到最后一个八强席位" : "这一轮不再设跳过";
     els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : revivalDuel ? "复活遗珠，能否重返八强？" : "这一组，谁继续向岛心前进？";
-    els.choiceGrid.className = "choice-grid duel";
+    els.choiceGrid.className = isFinal ? "choice-grid duel final-duel" : "choice-grid duel";
     els.choiceGrid.innerHTML = `${choiceCard(pair[0], 0)}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1], 1)}`;
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
@@ -992,7 +993,7 @@
 
     ctx.fillStyle = "#466f45";
     ctx.font = "900 21px Arial";
-    ctx.fillText("蛋岛环游记 · DAN ISLAND ODYSSEY", 45, 48);
+    ctx.fillText("蛋岛环游记 · EGG ISLAND ODYSSEY", 45, 48);
     ctx.fillStyle = "#708074";
     ctx.font = "18px 'Microsoft YaHei'";
     ctx.fillText("蛋岛环游记 / 我的单曲 Top 1", 45, 78);

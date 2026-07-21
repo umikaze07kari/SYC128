@@ -84,7 +84,7 @@ const rawSongs = [
   ["shan-li-de-yang-guang", "山里的阳光", "single", "solo", "治愈", "个人单曲", 70],
 
   // 独唱作品（《如星》已在 OST 分类中收录，不重复添加）
-  ["yong-bu-shi-lian-de-ai", "永不失联的爱（正式版）", "single", "solo", "抒情", "个人单曲", 97],
+  ["yong-bu-shi-lian-de-ai", "永不失联的爱", "single", "solo", "抒情", "个人单曲", 97],
   ["sen-zhi-lian-ge", "森之恋歌", "single", "solo", "治愈", "个人单曲", 91],
   ["xing-mang", "星芒", "single", "solo", "明亮", "个人单曲", 76],
   ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "single", "solo", "明亮", "个人单曲", 78],
@@ -294,7 +294,7 @@ const HIGHLIGHT_LYRICS = {
   "xing-mang": "我愿做星芒 闪耀九州之上",
   "ai-de-qi-huan-lv-xing": "地球是蓝水晶 送给你写下一生的约定",
   "hong-qing-ting": "晚霞中的红蜻蜓呀 你在哪里啊",
-  "qing-ren": "是缘是情是童真还是意外\n有泪有罪有付出还有忍耐",
+  "qing-ren": "是缘是情是童真 还是意外\n有泪有罪有付出 还有忍耐",
   "mei-man-yi-sheng": "月光照亮归家的梦 也照亮前程\n照你我所盼的人 美满一生",
   "chun-mei-mei-sleep": "好明媚 没寐美玫眉",
   "wo-zai-yi-de": "那些神话情话表白的话 像深夜一场烟花",
@@ -307,6 +307,36 @@ const HIGHLIGHT_LYRICS = {
   "wu-you-nian": "若是无忧念 怎会留下星辉照亮人间",
   "bu-ru-jian-yi-mian": "不如见一面 哪怕是一眼",
   "wei-wan-dai-xu": "在蔚蓝的尽头 未完待续的梦",
+  "tong-xin-xiang-wei-lai": "我相信你 就像你相信我一样",
+  "shan-li-de-yang-guang": "迎着晨辉上学校 心情多美好",
+  "dong-bei-min-yao": "塞北残阳是她的红妆",
+  "tian-tian": "我想要天天说 天天说",
+  "xiang-si": "最不屑一顾是相思",
+  "tian-di-long-lin": "这龙鳞却曾经 铿锵落地犹如碎冰",
+  "song-ni-yi-duo-xiao-hong-hua": "送你一朵小红花 开在那牛羊遍野的天涯",
+  "feng-xian": "长路奉献给远方 玫瑰奉献给爱情",
+  "yi-dong-de-xin": "曾经以为我的家 是一张张的票根",
+  "fei-yun-zhi-xia": "在飞云之下 以为忘了的家",
+  "tui-kai-shi-jie-de-men": "左手的泥呀 右手的泥呀 知己的花衣裳",
+  "yun-yu-hai": "如果世间万物能跨越能相爱",
+  "weak-live": "I get so weak in the knees",
+  "pu-tong-peng-you-live": "我不能只是 be your friend",
+  "er-shi-er-cai-er-shi-san-live": "她今年农历三月六号刚满二十二",
+  "tian-ya-ge-nv-live": "天涯呀海角 觅呀觅知音",
+  "wang-shi-zhi-neng-hui-wei-live": "时光一逝永不回 往事只能回味",
+  "shou-zi-live": "越是不吃越是不想吃 镜中的瘦子我不认识",
+  "ye-jian-you-yong-chi-live": "暂时 让外面都与他无关",
+  "yuan-liang": "那些日子你会不会舍不得",
+  "ru-guo-ai-wang-le": "如果爱忘了 泪不想落下",
+  "zhe-shi-jie-na-me-duo-ren": "这世界有那么多人 多幸运我有个我们",
+  "this-is-me": "I am brave I am bruised",
+  "gui": "是你望着我 你望着我",
+  "ru-yuan": "而我将爱你所爱的人间",
+  "yi-zhi-hen-an-jing": "给你的爱一直很安静",
+  "si-nian": "为何你一去别无消息 只把思念积压在我心头",
+  "xin-huo": "因为我曾经和恶魔 斗过几回合\n就算它极端恐吓 不握手言和",
+  "cheng-shi-zhi-guang": "当那乌云遮挡月光 城市之光更明亮",
+  "ni-jiu-bu-yao-xiang-qi-wo": "明明你也很爱我 没理由爱不到结果",
   "xiang-feng-yi-yang": "你不就像风一样 侵略时沙沙作响",
   "forever-young": "遇到每个女孩我都会告诉她\n你该那样爱上forever young",
   "xun-yi-ge-tian-huang-di-lao-de-di-fang": "在山的怀抱里谁醒透 在泉的叮咚里谁醉彻",
@@ -395,10 +425,28 @@ const PROGRAM_COVER_IDS = {
   "晚会舞台": "zhe-shi-jie-na-me-duo-ren"
 };
 
+// 这些封面文件由维护者放在 assets/covers/nophoto/ 作为记录；
+// 页面不请求该目录或同名 JPG，直接使用统一 default 图片。
+const DEFAULT_COVER_IDS = new Set([
+  "dong-bei-min-yao",
+  "fei-yun-zhi-xia",
+  "feng-xian",
+  "shan-li-de-yang-guang",
+  "song-ni-yi-duo-xiao-hong-hua",
+  "tian-di-long-lin",
+  "tian-tian",
+  "tui-kai-shi-jie-de-men",
+  "weak-live",
+  "xiang-si",
+  "yi-dong-de-xin",
+  "zhe-shi-jie-na-me-duo-ren"
+]);
+
 window.SONG_CATALOG = rawSongs.map((row, index) => {
   const [id, title, source, vocal, mood, release, seedScore] = row;
   const color = SOURCE_META[source]?.colors || SOURCE_META.other.colors;
   const lyricExcerpt = HIGHLIGHT_LYRICS[id] || "";
+  const coverId = PROGRAM_COVER_IDS[release] || id;
   return {
     id,
     title,
@@ -409,7 +457,7 @@ window.SONG_CATALOG = rawSongs.map((row, index) => {
     mood,
     release,
     seedScore,
-    cover: `assets/covers/${PROGRAM_COVER_IDS[release] || id}.jpg`,
+    cover: DEFAULT_COVER_IDS.has(coverId) ? "assets/covers/default.jpg" : `assets/covers/${coverId}.jpg`,
     lyricExcerpt,
     cardTextKind: lyricExcerpt ? "歌词短摘" : "听感提示",
     cardLines: lyricExcerpt ? [lyricExcerpt] : (MOOD_CUES[mood] || ["把注意力交给旋律", "听见属于它的独特颜色"]),
