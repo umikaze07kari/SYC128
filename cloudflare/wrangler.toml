@@ -1,0 +1,17 @@
+name = "dan-island-ranking-api"
+main = "src/worker.js"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dan-island-ranking"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[vars]
+# 多个来源用英文逗号分隔。部署到自定义域名时也要补到这里。
+ALLOWED_ORIGINS = "https://umikaze07kari.github.io,http://localhost:8000,http://127.0.0.1:8000"
+MIN_DURATION_MS = "60000"
+MIN_DECISIONS = "40"
+FAST_DECISION_MS = "350"
+MAX_FAST_RATIO = "0.45"
+

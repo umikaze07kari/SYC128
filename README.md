@@ -70,3 +70,51 @@ powershell -ExecutionPolicy Bypass -File scripts/capture_mobile.ps1 -Url http://
 - `seedScore` 只用于首轮分区，不在页面展示，也不对应任何平台播放量或收藏量。
 - 每首歌生成后都有 `lyricExcerpt` 字段。请在 `HIGHLIGHT_LYRICS` 中按歌曲 `id` 人工填写高光歌词；留空时卡片显示原创听感提示。较长歌词可在字符串中写 `\n`，手动指定卡片中的换行位置，例如 `"第一句\n第二句"`。
 - 修改静态文件后如测试设备仍显示旧页面，请递增 `sw.js` 的缓存版本以刷新离线缓存。
+
+## Cloudflare D1 总榜
+
+网站仍部署在 GitHub Pages，提交与榜单接口运行在 Cloudflare Worker，数据保存在 D1。公开榜单位于 `leaderboard.html`，人工复核页位于 `admin.html`。
+
+计分采用晋级层级权重：Top 1 为 100 分、亚军 70 分、四强 45 分、八强 28 分、十六强 16 分、三十二强 8 分。同一淘汰轮内视为并列。每个匿名设备在公开统计中只有一份当前结果，再次完成测试会更新该结果；每次提交尝试仍会保存在审计表中。
+
+### 首次部署
+
+需要安装 Node.js 和 Wrangler，并登录自己的 Cloudflare 账号：
+
+```powershell
+npx wrangler login
+cd cloudflare
+npx wrangler d1 create dan-island-ranking
+```
+
+把命令返回的 `database_id` 填入 `cloudflare/wrangler.toml`，然后初始化远程数据库：
+
+```powershell
+npx wrangler d1 execute dan-island-ranking --remote --file=schema.sql
+```
+
+设置两个不会进入仓库的 Secret：
+
+```powershell
+npx wrangler secret put DEVICE_SALT
+npx wrangler secret put ADMIN_TOKEN
+```
+
+`DEVICE_SALT` 使用随机长字符串；`ADMIN_TOKEN` 是访问人工复核页时输入的管理令牌。最后部署：
+
+```powershell
+npx wrangler deploy
+```
+
+将部署结果中的 `https://...workers.dev` 地址填入项目根目录 `config.js` 的 `apiBaseUrl`。如果 GitHub Pages 使用了自定义域名，也要把该域名加入 `cloudflare/wrangler.toml` 的 `ALLOWED_ORIGINS` 后重新部署。
+
+### 自动检测与人工复核
+
+Worker 默认把以下提交标为 `suspect`，暂不计入总榜，但不会删除：
+
+- 整体用时少于 60 秒；
+- 可审计选择记录少于 40 次；
+- 45% 以上的选择快于 350 毫秒；
+- 单步选择耗时中位数低于 350 毫秒。
+
+阈值可在 `cloudflare/wrangler.toml` 中调整。访问 `admin.html`，输入 `ADMIN_TOKEN` 后，可以查看每一步选择耗时，将记录手动设为“有效”“无效”或恢复自动判断，并添加无效原因。管理令牌只进入 Worker 的 `Authorization` 请求头并保存在标签页级 `sessionStorage`，不要将它写入 `config.js`。

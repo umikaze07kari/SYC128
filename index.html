@@ -20,6 +20,7 @@
       <span><b>蛋岛环游记</b><small>DAN ISLAND ODYSSEY</small></span>
     </button>
     <div class="topbar-actions">
+      <a class="leaderboard-link" href="leaderboard.html">总榜</a>
       <button class="music-toggle" id="musicToggle" type="button" aria-label="开启背景音乐和按钮音效" aria-pressed="false">
         <span class="music-icon" aria-hidden="true">♪</span><span class="music-label">音乐关闭</span>
       </button>
@@ -114,11 +115,14 @@
       </div>
 
       <div class="result-actions">
+        <a class="primary-button result-link-button" href="leaderboard.html">查看岛民总榜 <span>→</span></a>
         <button class="primary-button" id="makePoster" type="button">保存结果图片 <span>↗</span></button>
         <button class="soft-button" id="resultUndo" type="button">↶ 撤回决选</button>
         <button class="soft-button" id="copyJourneyLink" type="button">复制测试链接</button>
         <button class="soft-button" id="restartJourney" type="button">再测一次</button>
       </div>
+
+      <p class="submission-status" id="submissionStatus" role="status">准备汇入岛民总榜…</p>
 
       <aside class="invite-card">
         <div class="invite-copy"><span>PASS THE MAP</span><b>把蛋岛地图漂流给下一位纯牛奶</b><p>长按识别二维码，接住漂流瓶，开始自己的蛋岛环游。</p></div>
@@ -155,6 +159,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="songs.js"></script>
+  <script src="config.js"></script>
   <script src="vendor/qrcode.js"></script>
   <script src="app.js"></script>
 </body>

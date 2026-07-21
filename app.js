@@ -6,6 +6,8 @@
   const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
+  const DEVICE_KEY = "dan-island-anonymous-device-v1";
+  const API_BASE_URL = String(window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
   const LANDING_GROUP_SIZE = 4;
   const BASE_LANDING_QUALIFIERS = 24;
   const MAX_REVIVAL_SLOTS = 5;
@@ -69,6 +71,7 @@
     posterDialog: $("#posterDialog"),
     canvas: $("#resultCanvas"),
     resultQr: $("#resultQr"),
+    submissionStatus: $("#submissionStatus"),
     toast: $("#toast")
   };
 
@@ -88,6 +91,19 @@
     els.views.forEach((view) => view.classList.toggle("active", view.id === `${name}View`));
     document.body.dataset.view = name;
     window.scrollTo(0, 0);
+  }
+
+  function anonymousDeviceId() {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = globalThis.crypto?.randomUUID?.() || `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  }
+
+  function journeyId() {
+    return globalThis.crypto?.randomUUID?.() || `journey-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
   function shuffled(items) {
@@ -216,6 +232,7 @@
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
       version: 12,
+      journeyId: journeyId(),
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -245,6 +262,9 @@
       top2: [],
       finalists: [],
       champion: null,
+      auditEvents: [],
+      stepStartedAt: null,
+      submission: null,
       checkpoint: null,
       history: []
     };
@@ -322,6 +342,28 @@
     renderCurrent();
   }
 
+  function beginAuditStep() {
+    if (!Number.isFinite(state.stepStartedAt)) {
+      state.stepStartedAt = Date.now();
+      save();
+    }
+  }
+
+  function recordDecision(kind, candidates, selected) {
+    state.auditEvents ||= [];
+    const now = Date.now();
+    const journeyStart = Date.parse(state.createdAt) || now;
+    state.auditEvents.push({
+      kind,
+      phase: state.phase,
+      candidates: [...candidates],
+      selected: Array.isArray(selected) ? [...selected] : selected,
+      elapsedMs: Math.max(0, now - (state.stepStartedAt || now)),
+      journeyElapsedMs: Math.max(0, now - journeyStart)
+    });
+    state.stepStartedAt = null;
+  }
+
   function pushHistory() {
     const { history, ...snapshot } = state;
     state.history.push(JSON.parse(JSON.stringify(snapshot)));
@@ -359,6 +401,7 @@
       state.landingGroupStartedAt = Date.now();
       save();
     }
+    beginAuditStep();
     els.unfamiliarAction.hidden = tiebreak || supplement;
     els.matchNote.hidden = false;
     updateUndo();
@@ -368,6 +411,7 @@
   function chooseLanding(winnerId) {
     pushHistory();
     const group = state.groups[state.groupIndex];
+    recordDecision("landing", group, winnerId);
     if (winnerId) {
       state.groupWinners.push(winnerId);
       state.landingChoiceMs[winnerId] = Math.max(0, Date.now() - (state.landingGroupStartedAt || Date.now()));
@@ -419,6 +463,7 @@
   function chooseLandingTiebreak(winnerId) {
     pushHistory();
     const contenders = [...state.landingTiebreak];
+    recordDecision("landing-tiebreak", contenders, winnerId);
     contenders.forEach((id) => { if (id !== winnerId) state.eliminated.push(id); });
     const qualified = [...state.directSeeds, ...state.groupWinners].filter((id) => !contenders.includes(id));
     qualified.push(winnerId);
@@ -447,12 +492,14 @@
     els.choiceGrid.innerHTML = `${choiceCard(pair[0], 0)}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1], 1)}`;
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
+    beginAuditStep();
     updateUndo();
     showView("battle");
   }
 
   function chooseDuel(winnerId) {
     pushHistory();
+    recordDecision("duel", state.duelPairs[state.duelIndex], winnerId);
     state.duelWinners.push(winnerId);
     state.duelIndex += 1;
     if (state.duelIndex < state.duelPairs.length) {
@@ -541,6 +588,7 @@
             </button>`).join("")}
         </div>
       </section>`).join("");
+    beginAuditStep();
     showView("selection");
   }
 
@@ -559,6 +607,8 @@
 
   function confirmSelection() {
     if (state.selection.length !== selectionLimit()) return;
+    pushHistory();
+    recordDecision("revival", state.eliminated, state.selection);
     launchFirstDuel([...state.directSeeds, ...state.groupWinners, ...state.selection]);
     state.selection = [];
     save();
@@ -663,6 +713,89 @@
     renderCurrent();
   }
 
+  function placementRows() {
+    const groups = [
+      { tier: "champion", ids: state.champion ? [state.champion] : [] },
+      { tier: "finalist", ids: state.top2.filter((id) => id !== state.champion) },
+      { tier: "top4", ids: state.top4.filter((id) => !state.top2.includes(id)) },
+      { tier: "top8", ids: state.top8.filter((id) => !state.top4.includes(id)) },
+      { tier: "top16", ids: state.top16.filter((id) => !state.top8.includes(id)) },
+      { tier: "top32", ids: state.top32.filter((id) => !state.top16.includes(id)) }
+    ];
+    let rank = 1;
+    return groups.flatMap((group) => {
+      const rankStart = rank;
+      const rankEnd = rank + group.ids.length - 1;
+      rank = rankEnd + 1;
+      return group.ids.map((songId) => ({ songId, tier: group.tier, rankStart, rankEnd }));
+    });
+  }
+
+  function submissionStatusText(result = state.submission) {
+    if (!API_BASE_URL) return "总榜接口尚未配置，本次结果只保存在当前设备。";
+    if (!result) return "准备汇入岛民总榜…";
+    if (result.state === "pending") return "正在把本次结果汇入岛民总榜…";
+    if (result.state === "failed") return "本次结果暂未上传；下次打开结果页会自动重试。";
+    if (result.reviewStatus === "invalid") return "此设备的结果已被人工标记为无效，当前不计入总榜。";
+    if (result.reviewStatus === "suspect") return "结果已收到，因选择速度较快暂不计榜，等待人工复核。";
+    return result.replaced ? "已更新此设备在总榜中的唯一一份结果。" : "结果已计入岛民总榜。";
+  }
+
+  function updateSubmissionStatus() {
+    if (els.submissionStatus) els.submissionStatus.textContent = submissionStatusText();
+  }
+
+  async function submitCompletedJourney() {
+    updateSubmissionStatus();
+    if (!API_BASE_URL || !state?.champion) return;
+    const previous = state.submission;
+    if (previous?.state === "submitted" && previous.completedAt === state.completedAt) return;
+    if (previous?.state === "pending" && Date.now() - Date.parse(previous.attemptedAt || 0) < 30000) return;
+
+    const events = state.auditEvents || [];
+    const completedAt = state.completedAt || new Date().toISOString();
+    const startedAt = state.createdAt || completedAt;
+    const payload = {
+      schemaVersion: 1,
+      clientVersion: state.version,
+      deviceId: anonymousDeviceId(),
+      journeyId: state.journeyId || journeyId(),
+      startedAt,
+      completedAt,
+      durationMs: Math.max(0, Date.parse(completedAt) - Date.parse(startedAt)),
+      catalogSize: state.catalogIds.length,
+      config: state.config,
+      placements: placementRows(),
+      events
+    };
+    state.journeyId = payload.journeyId;
+    state.submission = { state: "pending", completedAt, attemptedAt: new Date().toISOString() };
+    save();
+    updateSubmissionStatus();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+      state.submission = {
+        state: "submitted",
+        completedAt,
+        reviewStatus: result.reviewStatus,
+        replaced: Boolean(result.replaced),
+        submissionId: result.submissionId
+      };
+    } catch (error) {
+      console.warn("Leaderboard submission failed", error);
+      state.submission = { state: "failed", completedAt, attemptedAt: new Date().toISOString() };
+    }
+    save();
+    updateSubmissionStatus();
+  }
+
   function renderResult() {
     const winner = byId(state.champion);
     $("#winnerCover").src = winner.cover;
@@ -675,6 +808,7 @@
     renderQrCode();
     showView("result");
     updateContinue();
+    submitCompletedJourney();
   }
 
   function renderCurrent() {

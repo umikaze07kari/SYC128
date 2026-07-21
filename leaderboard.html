@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#557c45">
+  <meta name="description" content="蛋岛环游记岛民总榜，展示所有有效测试结果加权后的前 50 首歌曲。">
+  <title>岛民总榜 · 蛋岛环游记</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="leaderboard-page" data-view="leaderboard">
+  <div class="contour contour-a" aria-hidden="true"></div>
+  <div class="contour contour-b" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="回到测试首页">
+      <span class="brand-egg">蛋</span>
+      <span><b>蛋岛环游记</b><small>DAN ISLAND ODYSSEY</small></span>
+    </a>
+    <a class="leaderboard-link" href="index.html">去测试</a>
+  </header>
+
+  <main class="leaderboard-main">
+    <header class="leaderboard-hero">
+      <p class="eyebrow">ISLANDERS' TOP 50</p>
+      <h1>岛民总榜</h1>
+      <p>汇集所有有效环游结果。晋级越深，获得的权重越高；同一淘汰轮次按并列名次计算。</p>
+      <div class="leaderboard-stats" id="leaderboardStats" aria-live="polite"><span>正在连接岛屿电台…</span></div>
+    </header>
+
+    <section class="podium" id="podium" aria-label="榜单前三名"></section>
+
+    <section class="ranking-sheet" aria-labelledby="rankingTitle">
+      <div class="ranking-sheet-head">
+        <div><p class="eyebrow">FULL RANKING</p><h2 id="rankingTitle">前 50 名</h2></div>
+        <button class="soft-button compact-button" id="refreshLeaderboard" type="button">刷新</button>
+      </div>
+      <div class="ranking-list" id="rankingList"><p class="ranking-message">正在加载榜单…</p></div>
+    </section>
+
+    <aside class="weight-note">
+      <b>计分方式</b>
+      <p>Top 1 / 亚军 / 四强 / 八强 / 十六强 / 三十二强分别获得 100 / 70 / 45 / 28 / 16 / 8 分。同一设备只保留一份当前结果；过快提交会暂时排除，待人工复核。</p>
+    </aside>
+  </main>
+
+  <script src="songs.js"></script>
+  <script src="config.js"></script>
+  <script src="leaderboard.js"></script>
+</body>
+</html>
