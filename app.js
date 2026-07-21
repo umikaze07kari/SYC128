@@ -13,26 +13,25 @@
   const MAX_REVIVAL_SLOTS = 5;
   const MIN_LANDING_QUALIFIERS = 32 - MAX_REVIVAL_SLOTS;
   const OPTIONAL_COLLECTIONS = [
-    { key: "ost", group: "ost", label: "影视原声", match: (song) => song.source === "ost" },
+    { key: "ost", group: "stage", label: "影视原声", match: (song) => song.source === "ost" },
     { key: "voice2020", group: "classic", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
     { key: "singer2025", group: "classic", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
     { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
     { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
     { key: "dramaSongs", group: "classic", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
     { key: "chinaMusic", group: "classic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") },
-    { key: "concert", group: "classic", label: "演唱会", match: (song) => song.release === "演唱会" },
+    { key: "concert", group: "stage", label: "演唱会", match: (song) => song.release === "演唱会" },
     { key: "giftedVoice", group: "other", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
     { key: "praiseSong", group: "other", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
     { key: "rapListen", group: "other", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
     { key: "ourSong", group: "other", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
     { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
-    { key: "gala", group: "gala", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
+    { key: "gala", group: "stage", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
   ];
   const COLLECTION_GROUPS = [
-    { key: "ost", title: "影视原声", note: "影视歌曲" },
+    { key: "stage", title: "影视与舞台", note: "三类平级，可分别开关" },
     { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
-    { key: "other", title: "其他音乐综艺", note: "更多现场" },
-    { key: "gala", title: "晚会舞台", note: "特别舞台" }
+    { key: "other", title: "其他音乐综艺", note: "更多现场" }
   ];
   const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound", "dramaSongs", "chinaMusic", "concert"];
   const ROUND_LABELS = {
@@ -83,6 +82,7 @@
   let posterBlob = null;
   let toastTimer = null;
   let audio = null;
+  const preloadedCovers = new Set();
 
   function showToast(message) {
     $("#toast").textContent = message;
@@ -313,7 +313,31 @@
   }
 
   function imageMarkup(song, className = "") {
-    return `<img class="${className}" src="${song.cover}" alt="《${song.title}》封面" loading="lazy" onerror="this.onerror=null;this.src='${FALLBACK_COVER}'">`;
+    return `<img class="${className}" src="${song.cover}" alt="《${song.title}》封面" loading="eager" decoding="async" onerror="this.onerror=null;this.src='${FALLBACK_COVER}'">`;
+  }
+
+  function preloadCovers(ids) {
+    if (navigator.connection?.saveData) return;
+    [...new Set(ids)].map(byId).filter(Boolean).forEach((song) => {
+      if (preloadedCovers.has(song.cover)) return;
+      preloadedCovers.add(song.cover);
+      const image = new Image();
+      image.decoding = "async";
+      image.src = song.cover;
+    });
+  }
+
+  function preloadUpcomingChoices() {
+    const schedule = window.requestIdleCallback || ((callback) => setTimeout(callback, 80));
+    schedule(() => {
+      if (["landing", "landingTiebreak"].includes(state?.phase)) {
+        const upcoming = (state.groups || []).slice(state.groupIndex + 1, state.groupIndex + 4).flat();
+        preloadCovers(upcoming);
+      } else if (state?.duelPairs) {
+        const upcoming = state.duelPairs.slice(state.duelIndex + 1, state.duelIndex + 5).flat();
+        preloadCovers(upcoming);
+      }
+    });
   }
 
   function shortLine(song) {
@@ -411,6 +435,7 @@
     els.choiceTitle.textContent = tiebreak ? "谁来拿到最后一张通行票？" : supplement ? "这一组，谁值得重新登岛？" : "哪一首值得先登岛？";
     els.choiceGrid.className = "choice-grid four-up";
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
+    preloadUpcomingChoices();
     if (!Number.isFinite(state.landingGroupStartedAt)) {
       state.landingGroupStartedAt = Date.now();
       save();
@@ -506,6 +531,7 @@
     els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : revivalDuel ? "复活遗珠，能否重返八强？" : "这一组，谁继续向岛心前进？";
     els.choiceGrid.className = isFinal ? "choice-grid duel final-duel" : "choice-grid duel";
     els.choiceGrid.innerHTML = `${choiceCard(pair[0], 0)}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1], 1)}`;
+    preloadUpcomingChoices();
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
     beginAuditStep();
@@ -1226,10 +1252,17 @@
     $("#resultUndo").addEventListener("click", undoLastChoice);
     els.choiceGrid.addEventListener("click", (event) => {
       const button = event.target.closest("[data-song-id]");
-      if (!button) return;
-      if (state.phase === "landing") chooseLanding(button.dataset.songId);
-      else if (state.phase === "landingTiebreak") chooseLandingTiebreak(button.dataset.songId);
-      else chooseDuel(button.dataset.songId);
+      if (!button || els.choiceGrid.classList.contains("choice-locked")) return;
+      els.choiceGrid.classList.add("choice-locked");
+      button.classList.add("is-chosen");
+      button.setAttribute("aria-pressed", "true");
+      const phase = state.phase;
+      const songId = button.dataset.songId;
+      setTimeout(() => {
+        if (phase === "landing") chooseLanding(songId);
+        else if (phase === "landingTiebreak") chooseLandingTiebreak(songId);
+        else chooseDuel(songId);
+      }, 230);
     });
     els.unfamiliarAction.addEventListener("click", () => chooseLanding(null));
     els.selectionGrid.addEventListener("click", (event) => {
