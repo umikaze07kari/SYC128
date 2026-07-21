@@ -494,48 +494,63 @@
     state.checkpoint = { title, copy, nextPhase, undoable };
   }
 
-  function pendingRound() {
-    const phase = state.checkpoint?.nextPhase;
-    return {
-      phase,
-      label: phase === "final" ? "岛主决选 · 待揭晓" : `${state.firstStageTarget} 强首轮对阵`,
-      matches: state.duelPairs.map((pair) => ({ songs: [...pair], winner: null })),
-      pending: true
-    };
+  function councilOrder(ids) {
+    if (state.finalists?.length !== 2) return ids;
+    const remaining = ids.filter((id) => !state.finalists.includes(id));
+    return [remaining[0], state.finalists[0], remaining[1], state.finalists[1], ...remaining.slice(2)].filter(Boolean);
   }
 
-  function matchMarkup(match, index) {
-    const [leftId, rightId] = match.songs;
-    const left = byId(leftId);
-    const right = byId(rightId);
-    const winner = match.winner ? byId(match.winner) : null;
-    return `<article class="match-result${winner ? " decided" : " pending"}">
-      <span class="match-number">${String(index + 1).padStart(2, "0")}</span>
-      <div class="pair-line">
-        <span class="contestant ${winner?.id === leftId ? "winner" : ""}" title="${left.title}">${left.title}</span>
-        <i>VS</i>
-        <span class="contestant ${winner?.id === rightId ? "winner" : ""}" title="${right.title}">${right.title}</span>
-      </div>
-      <div class="advance-line"><small>${winner ? "晋级" : "待选择"}</small><b>${winner ? winner.title : "—"}</b><span>→</span></div>
-    </article>`;
-  }
-
-  function renderRoute(container, rounds, full = false) {
-    const pages = rounds.flatMap((round) => {
-      const pageCount = Math.ceil(round.matches.length / 10);
-      return Array.from({ length: pageCount }, (_, pageIndex) => ({
-        ...round,
-        matches: round.matches.slice(pageIndex * 10, pageIndex * 10 + 10),
-        pageIndex,
-        pageCount
-      }));
+  function trajectoryStages() {
+    const phases = state.firstStageTarget === 40 ? ["duel40", "duel20", "duel10"] : ["duel20", "duel10"];
+    const counts = state.firstStageTarget === 40 ? [40, 20, 10, 5, 2, 1] : [20, 10, 5, 2, 1];
+    const rounds = phases.map((phase) => {
+      const completed = state.bracketRounds.find((round) => round.phase === phase);
+      if (completed) return { phase, matches: completed.matches.map((match) => ({ ...match, songs: [...match.songs] })) };
+      const isPending = state.checkpoint?.nextPhase === phase || state.phase === phase;
+      if (!isPending) return null;
+      return {
+        phase,
+        matches: state.duelPairs.map((pair, index) => ({ songs: [...pair], winner: state.phase === phase ? state.duelWinners[index] || null : null }))
+      };
     });
-    container.className = `island-route duel-route${full ? " full-bracket" : ""}`;
-    container.removeAttribute("data-columns");
-    container.innerHTML = `<div class="duel-rounds">${pages.map((round) => `
-      <section class="bracket-round">
-        <div class="bracket-round-head"><b>${round.label}${round.pageCount > 1 ? ` · ${round.pageIndex + 1}/${round.pageCount}` : ""}</b><small>${round.matches.length} 组 · 二进一</small></div>
-        <div class="match-grid">${round.matches.map(matchMarkup).join("")}</div>
+
+    const available = rounds.filter(Boolean);
+    if (available.length) {
+      const last = available.at(-1);
+      if (last.matches.every((match) => match.winner)) {
+        const desired = councilOrder(last.matches.map((match) => match.winner));
+        last.matches.sort((a, b) => desired.indexOf(a.winner) - desired.indexOf(b.winner));
+      }
+      for (let index = available.length - 2; index >= 0; index -= 1) {
+        const desired = available[index + 1].matches.flatMap((match) => match.songs);
+        available[index].matches.sort((a, b) => desired.indexOf(a.winner) - desired.indexOf(b.winner));
+      }
+    }
+
+    const labels = counts.map((count) => count === 1 ? "冠军" : `${count}强`);
+    const idsByStage = counts.map(() => []);
+    if (rounds[0]) idsByStage[0] = rounds[0].matches.flatMap((match) => match.songs);
+    else idsByStage[0] = state.firstStageTarget === 40 ? [...state.top40] : [...state.top20];
+    phases.forEach((phase, index) => {
+      const round = rounds[index];
+      if (round?.matches.every((match) => match.winner)) idsByStage[index + 1] = round.matches.map((match) => match.winner);
+    });
+    idsByStage[counts.length - 2] = state.finalists?.length ? [...state.finalists] : [];
+    idsByStage[counts.length - 1] = state.champion ? [state.champion] : [];
+    return counts.map((expected, index) => ({ label: labels[index], expected, ids: idsByStage[index] }));
+  }
+
+  function renderTrajectory(container) {
+    const stages = trajectoryStages();
+    container.className = "trajectory-route";
+    container.dataset.columns = stages.length;
+    container.innerHTML = `<div class="trajectory-board">${stages.map((stage) => `
+      <section class="trajectory-stage">
+        <b class="trajectory-head">${stage.label}</b>
+        <div class="trajectory-cells">${Array.from({ length: stage.expected }, (_, index) => {
+          const song = stage.ids[index] ? byId(stage.ids[index]) : null;
+          return `<div class="trajectory-cell${song ? "" : " pending"}"${song ? ` title="${song.title}"` : ""}><span>${song?.title || ""}</span></div>`;
+        }).join("")}</div>
       </section>`).join("")}</div>`;
   }
 
@@ -543,11 +558,9 @@
     $("#checkpointTitle").textContent = state.checkpoint.title;
     $("#checkpointCopy").textContent = state.checkpoint.copy;
     els.checkpointUndo.hidden = !state.checkpoint.undoable;
-    const showPending = state.checkpoint.nextPhase === "final" || !state.bracketRounds.length;
-    const rounds = showPending ? [pendingRound()] : [state.bracketRounds.at(-1)];
-    $("#checkpointRouteTitle").textContent = showPending ? "下一站二选一对阵" : "本轮二进一结果";
-    $("#checkpointRouteHint").textContent = showPending ? "左右两首即将正面对决 · 可横滑" : "胜出已高亮 · 可横滑";
-    renderRoute(els.checkpointRoute, rounds);
+    $("#checkpointRouteTitle").textContent = "完整晋级轨迹";
+    $("#checkpointRouteHint").textContent = "尚未产生的轮次暂时留空";
+    renderTrajectory(els.checkpointRoute);
     showView("checkpoint");
   }
 
@@ -564,9 +577,9 @@
     $("#winnerCover").onerror = () => { $("#winnerCover").src = FALLBACK_COVER; };
     $("#winnerTitle").textContent = winner.title;
     $("#winnerSource").textContent = winner.release;
-    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 · 左右滑动查看各轮`;
+    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 · 完整晋级轨迹`;
     $("#resultUndo").hidden = !state.history?.length;
-    renderRoute(els.finalRoute, state.bracketRounds, true);
+    renderTrajectory(els.finalRoute);
     renderQrCode();
     showView("result");
     updateContinue();
@@ -703,14 +716,7 @@
     ctx.font = "14px 'Microsoft YaHei'";
     ctx.fillText("格高与字号逐轮递增 · 五强经岛主议会选出决赛席位", 255, 351);
 
-    const stages = [
-      state.top40?.length ? { label: "40强", ids: state.top40 } : { label: "20强", ids: state.top20 },
-      state.top40?.length ? { label: "20强", ids: state.top20 } : { label: "10强", ids: state.top10 },
-      state.top40?.length ? { label: "10强", ids: state.top10 } : { label: "5强", ids: state.top5 },
-      ...(state.top40?.length ? [{ label: "5强", ids: state.top5 }] : []),
-      { label: "2强", ids: state.finalists },
-      { label: "冠军", ids: [state.champion] }
-    ].filter((stage) => stage.ids?.length);
+    const stages = trajectoryStages();
     const boardX = 45;
     const boardY = 375;
     const boardW = 810;
