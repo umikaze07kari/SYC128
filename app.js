@@ -2,8 +2,8 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v12";
-  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
+  const STORAGE_KEY = "dan-island-odyssey-v13";
+  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
   const DEVICE_KEY = "dan-island-anonymous-device-v1";
@@ -18,25 +18,28 @@
     { key: "singer2025", group: "classic", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
     { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
     { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
+    { key: "dramaSongs", group: "classic", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
+    { key: "chinaMusic", group: "classic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") },
+    { key: "concert", group: "classic", label: "演唱会", match: (song) => song.release === "演唱会" },
     { key: "giftedVoice", group: "other", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
     { key: "praiseSong", group: "other", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
     { key: "rapListen", group: "other", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
     { key: "ourSong", group: "other", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
-    { key: "dramaSongs", group: "other", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
     { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
-    { key: "chinaMusic", group: "other", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
+    { key: "gala", group: "other", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
   ];
   const COLLECTION_GROUPS = [
     { key: "ost", title: "影视原声", note: "影视歌曲" },
     { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
     { key: "other", title: "其他音乐综艺", note: "更多现场" }
   ];
-  const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound"];
+  const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound", "dramaSongs", "chinaMusic", "concert"];
   const ROUND_LABELS = {
     duel32: "三十二进十六",
     duel16: "十六进八",
     duel8: "八进四",
     duel4: "四进二",
+    duel8Revival: "八强复活挑战",
     final: "挚爱决选"
   };
 
@@ -117,9 +120,16 @@
 
   function similarity(a, b) {
     let score = 0;
-    if (a.source === b.source) score += 5;
-    if (a.vocal === b.vocal) score += 2;
-    if (a.mood === b.mood) score += 3;
+    const aCore = a.source === "album" || a.source === "single";
+    const bCore = b.source === "album" || b.source === "single";
+    const sameProgram = a.release === b.release;
+    if (sameProgram) score += 36;
+    if (a.source === "ost" && b.source === "ost") score += 24;
+    if (a.source === "variety" && b.source === "variety") score += 8;
+    if (!aCore && !bCore && a.source === b.source) score += 6;
+    if (aCore && bCore) score -= 28;
+    if (a.vocal === b.vocal) score += 1;
+    if (a.mood === b.mood) score += 2;
     score -= Math.abs(a.seedScore - b.seedScore) * .01;
     return score;
   }
@@ -231,7 +241,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 12,
+      version: 13,
       journeyId: journeyId(),
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
@@ -255,6 +265,9 @@
       selection: [],
       selectionMode: null,
       revivalSlots: 0,
+      top8RevivalCandidates: [],
+      revivalChallenger: null,
+      revivalDefender: null,
       top32: [],
       top16: [],
       top8: [],
@@ -278,7 +291,7 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
       const saved = JSON.parse(raw);
-      if (saved?.version === 12) return saved;
+      if (saved?.version === 13) return saved;
       return null;
     } catch {
       return null;
@@ -479,6 +492,7 @@
     const stageMeta = {
       duel32: ["COASTLINE DUEL", "三十二进十六 · 二选一"],
       duel16: ["TIDAL DUEL", "十六进八 · 二选一"],
+      duel8Revival: ["TOP 8 WILDCARD", "八强复活挑战 · 二选一"],
       duel8: ["INNER ISLAND DUEL", "八进四 · 二选一"],
       duel4: ["SUMMIT DUEL", "四进二 · 二选一"]
     };
@@ -486,8 +500,9 @@
     els.stageTitle.textContent = isFinal ? "挚爱决选 · 二选一" : stageMeta[state.phase][1];
     els.stageCounter.textContent = `${state.duelIndex + 1} / ${state.duelPairs.length}`;
     els.roundProgress.style.width = `${(state.duelIndex / state.duelPairs.length) * 100}%`;
-    els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
-    els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : "这一组，谁继续向岛心前进？";
+    const revivalDuel = state.phase === "duel8Revival";
+    els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : revivalDuel ? "胜者拿到最后一个八强席位" : "这一轮不再设跳过";
+    els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : revivalDuel ? "复活遗珠，能否重返八强？" : "这一组，谁继续向岛心前进？";
     els.choiceGrid.className = "choice-grid duel";
     els.choiceGrid.innerHTML = `${choiceCard(pair[0], 0)}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1], 1)}`;
     els.unfamiliarAction.hidden = true;
@@ -507,6 +522,24 @@
       renderDuel();
       return;
     }
+    if (state.phase === "duel8Revival") {
+      state.bracketRounds.push({
+        phase: state.phase,
+        label: ROUND_LABELS[state.phase],
+        matches: state.duelPairs.map((pair, index) => ({ songs: [...pair], winner: state.duelWinners[index] }))
+      });
+      if (winnerId === state.revivalChallenger) {
+        state.top8 = state.top8.map((id) => id === state.revivalDefender ? winnerId : id);
+      }
+      state.duelPairs = makeDuelPairs(state.top8);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      state.selection = [];
+      setCheckpoint("接下来，八进四", winnerId === state.revivalChallenger ? "复活成功，新的八强阵容继续向岛心出发。" : "八强守擂成功，接下来继续向岛心出发。", "duel8", true);
+      save();
+      renderCheckpoint();
+      return;
+    }
     state.bracketRounds.push({
       phase: state.phase,
       label: ROUND_LABELS[state.phase],
@@ -520,10 +553,13 @@
       setCheckpoint("接下来，十六进八", "成功晋级的十六首歌正在浮向下一站。", "duel16", true);
     } else if (state.phase === "duel16") {
       state.top8 = [...state.duelWinners];
-      state.duelPairs = makeDuelPairs(state.top8);
+      const completedRound = state.bracketRounds[state.bracketRounds.length - 1];
+      state.top8RevivalCandidates = completedRound.matches.map((match) => match.songs.find((id) => id !== match.winner)).filter(Boolean);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("接下来，八进四", "八首歌继续前进，选择会变得更难。", "duel8", true);
+      state.selection = [];
+      state.selectionMode = "top8Revival";
+      state.phase = "top8Revival";
     } else if (state.phase === "duel8") {
       state.top4 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top4);
@@ -547,19 +583,21 @@
       return;
     }
     save();
-    renderCheckpoint();
+    if (state.phase === "top8Revival") renderSelection();
+    else renderCheckpoint();
   }
 
   function selectionCandidates() {
-    return state.eliminated.map(byId);
+    const ids = state.selectionMode === "top8Revival" ? state.top8RevivalCandidates : state.eliminated;
+    return ids.map(byId).filter(Boolean);
   }
 
   function selectionLimit() {
-    return Math.min(MAX_REVIVAL_SLOTS, state.revivalSlots);
+    return state.selectionMode === "top8Revival" ? 1 : Math.min(MAX_REVIVAL_SLOTS, state.revivalSlots);
   }
 
   function groupedSelectionCandidates() {
-    const sourceOrder = ["album", "single", "ost", "variety", "other"];
+    const sourceOrder = ["album", "single", "ost", "variety", "live", "other"];
     const grouped = selectionCandidates().reduce((result, song) => {
       (result[song.source] ||= []).push(song);
       return result;
@@ -571,9 +609,12 @@
 
   function renderSelection() {
     const limit = selectionLimit();
-    $("#selectionEyebrow").textContent = "TIDAL REVIVAL";
-    $("#selectionTitle").textContent = "潮水送回一些遗珠";
-    $("#selectionCopy").innerHTML = `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足三十二强。`;
+    const top8Revival = state.selectionMode === "top8Revival";
+    $("#selectionEyebrow").textContent = top8Revival ? "TOP 8 WILDCARD" : "TIDAL REVIVAL";
+    $("#selectionTitle").textContent = top8Revival ? "八强复活名额" : "潮水送回一些遗珠";
+    $("#selectionCopy").innerHTML = top8Revival
+      ? `从刚刚惜败的歌里选择 <b id="selectionNeed">1</b> 首，向八强发起一次复活挑战。`
+      : `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足三十二强。`;
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
@@ -608,6 +649,26 @@
   function confirmSelection() {
     if (state.selection.length !== selectionLimit()) return;
     pushHistory();
+    if (state.selectionMode === "top8Revival") {
+      const challenger = state.selection[0];
+      const originalMatch = state.bracketRounds.find((round) => round.phase === "duel16")?.matches.find((match) => match.songs.includes(challenger));
+      const originalWinner = originalMatch?.winner;
+      const defenders = state.top8.filter((id) => id !== originalWinner);
+      const defender = (defenders.length ? defenders : state.top8)
+        .map(byId)
+        .filter(Boolean)
+        .sort((a, b) => effectiveSeed(a) - effectiveSeed(b))[0];
+      recordDecision("top8-revival-pick", state.top8RevivalCandidates, challenger);
+      state.revivalChallenger = challenger;
+      state.revivalDefender = defender.id;
+      state.duelPairs = [orderPairByFirstRoundSpeed([challenger, defender.id])];
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      state.phase = "duel8Revival";
+      save();
+      renderDuel();
+      return;
+    }
     recordDecision("revival", state.eliminated, state.selection);
     launchFirstDuel([...state.directSeeds, ...state.groupWinners, ...state.selection]);
     state.selection = [];
@@ -814,8 +875,8 @@
   function renderCurrent() {
     if (!state) return showView("home");
     if (["landing", "landingTiebreak"].includes(state.phase)) renderLanding();
-    else if (["duel32", "duel16", "duel8", "duel4", "final"].includes(state.phase)) renderDuel();
-    else if (state.phase === "revival") renderSelection();
+    else if (["duel32", "duel16", "duel8Revival", "duel8", "duel4", "final"].includes(state.phase)) renderDuel();
+    else if (["revival", "top8Revival"].includes(state.phase)) renderSelection();
     else if (state.phase === "checkpoint") renderCheckpoint();
     else if (state.phase === "complete") renderResult();
   }

@@ -353,17 +353,15 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 }
 .mini-lyric br { display:block; }
 
-/* The four-up cards use a small printed corner motif instead of tape blocks. */
-.choice-grid.four-up .choice-info::before {
+/* One quiet color block replaces the previous stacked dots-and-stripes motif. */
+.choice-info::before {
   right:-13px;
   bottom:-12px;
   width:76px;
   height:58px;
   border-radius:52% 0 0 0;
-  opacity:.38;
-  background:
-    radial-gradient(circle at 65% 58%,var(--vivid-2) 0 1.3px,transparent 1.8px) 0 0 / 9px 9px,
-    repeating-linear-gradient(-38deg,transparent 0 8px,var(--vivid) 8px 9px,transparent 9px 17px);
+  opacity:.22;
+  background:color-mix(in srgb,var(--vivid) 58%,transparent);
   transform:rotate(-3deg);
 }
 
@@ -388,6 +386,18 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
   font:900 12px/1 ui-monospace,Consolas,monospace;
   letter-spacing:.04em;
   transform:rotate(-4deg);
+  animation:versusPulse 1.9s ease-in-out infinite;
+}
+.choice-grid.duel .cover-choice { animation:duelCardTension 2.8s ease-in-out infinite; will-change:translate,scale,box-shadow; }
+.choice-grid.duel .cover-choice:last-child { animation-delay:-1.4s; }
+.choice-grid.duel .cover-choice:active { animation:none; translate:0 1px; scale:.975; }
+@keyframes duelCardTension {
+  0%,100% { translate:0 1px; scale:1; box-shadow:2px 3px 0 rgba(91,83,69,.1),0 13px 28px rgba(45,39,58,.09); }
+  50% { translate:0 -4px; scale:1.012; box-shadow:3px 5px 0 rgba(91,83,69,.1),0 19px 34px rgba(67,52,94,.16); }
+}
+@keyframes versusPulse {
+  0%,100% { scale:1; box-shadow:3px 3px 0 #e3ddf7,0 0 0 0 rgba(117,96,181,.12); }
+  50% { scale:1.1; box-shadow:3px 3px 0 #e3ddf7,0 0 0 8px rgba(117,96,181,0); }
 }
 
 @media (max-width:760px) {
@@ -415,6 +425,17 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
     flex:0 0 auto;
     margin:6px 6px 0;
     border-radius:5px 5px 0 0;
+  }
+  .choice-grid.four-up .cover-frame { z-index:3; overflow:visible; }
+  .choice-grid.four-up .cover-frame img { overflow:hidden; border-radius:5px 0 0 4px; }
+  .choice-grid.four-up .cover-frame em {
+    left:calc(100% - 14px);
+    right:auto;
+    top:8px;
+    max-width:108px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   .choice-grid.duel .choice-info {
     position:relative;
