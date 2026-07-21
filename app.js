@@ -2,8 +2,8 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v10";
-  const LEGACY_STORAGE_KEY = "dan-island-odyssey-v9";
+  const STORAGE_KEY = "dan-island-odyssey-v11";
+  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
   const OPTIONAL_COLLECTIONS = [
@@ -22,9 +22,10 @@
   ];
   const DEFAULT_COLLECTIONS = ["ost", "singer2025", "voice2020"];
   const ROUND_LABELS = {
-    duel40: "四十进二十",
-    duel20: "二十进十",
-    duel10: "十进五",
+    duel32: "三十二进十六",
+    duel16: "十六进八",
+    duel8: "八进四",
+    duel4: "四进二",
     final: "岛主决选"
   };
 
@@ -112,9 +113,11 @@
 
   function makeLandingGroups(pool) {
     const ranked = [...pool].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
-    const directCount = pool.length % LANDING_GROUP_SIZE || LANDING_GROUP_SIZE;
+    let directCount = 0;
+    while (directCount < Math.min(32, pool.length)
+      && directCount + Math.ceil((pool.length - directCount) / LANDING_GROUP_SIZE) < 24) directCount += 1;
     const directSeeds = ranked.splice(0, directCount);
-    const groupCount = (pool.length - directCount) / LANDING_GROUP_SIZE;
+    const groupCount = Math.ceil(ranked.length / LANDING_GROUP_SIZE);
     const seeds = ranked.splice(0, groupCount);
     const groups = seeds.map((seed) => [seed.id]);
     const remaining = [...ranked].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
@@ -136,9 +139,7 @@
     return { directSeeds: directSeeds.map((song) => song.id), groups: shuffled(groups).map((group) => shuffled(group)) };
   }
 
-  function firstStageTargetFor(size) {
-    return size >= 64 ? 40 : 20;
-  }
+  function firstStageTargetFor() { return 32; }
 
   function readJourneyConfig() {
     return {
@@ -197,7 +198,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 10,
+      version: 11,
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -207,6 +208,7 @@
       groups,
       groupIndex: 0,
       groupWinners: [],
+      landingTiebreak: [],
       landingChoiceMs: {},
       landingGroupStartedAt: null,
       eliminated: [],
@@ -217,10 +219,11 @@
       selection: [],
       selectionMode: null,
       revivalSlots: 0,
-      top40: [],
-      top20: [],
-      top10: [],
-      top5: [],
+      top32: [],
+      top16: [],
+      top8: [],
+      top4: [],
+      top2: [],
       finalists: [],
       champion: null,
       checkpoint: null,
@@ -234,11 +237,9 @@
 
   function load() {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
-      if (saved?.version === 10) return saved;
-      if (saved?.version === 9) {
-        return { ...saved, version: 10, landingChoiceMs: {}, landingGroupStartedAt: null };
-      }
+      const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
+      const saved = JSON.parse(raw);
+      if (saved?.version === 11) return saved;
       return null;
     } catch {
       return null;
@@ -248,7 +249,7 @@
   function clear() {
     state = null;
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
     updateContinue();
   }
 
@@ -263,17 +264,18 @@
   }
 
   function shortLine(song) {
-    return song.cardLines[0] || "听见属于它的独特颜色";
+    return song.lyricExcerpt || "";
   }
 
   function choiceCard(song) {
+    const lyric = shortLine(song);
     return `
-      <button class="cover-choice source-${song.source}" type="button" data-song-id="${song.id}">
+      <button class="cover-choice source-${song.source}${lyric ? "" : " no-lyric"}" type="button" data-song-id="${song.id}">
         <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}${song.vocal === "collab" ? " · 合唱" : ""}</em></div>
         <div class="choice-info">
           <h3>${song.title}</h3>
           <small>${song.release}</small>
-          <div class="mini-lyric">${shortLine(song)}</div>
+          ${lyric ? `<div class="mini-lyric">${lyric}</div>` : ""}
         </div>
       </button>`;
   }
@@ -307,20 +309,22 @@
   }
 
   function renderLanding() {
-    const group = state.groups[state.groupIndex].map(byId);
-    els.stageEnglish.textContent = "LANDING ROUND";
-    els.stageTitle.textContent = "登岛海选 · 四选一";
-    els.stageCounter.textContent = `${state.groupIndex + 1} / ${state.groups.length}`;
-    els.roundProgress.style.width = `${(state.groupIndex / state.groups.length) * 100}%`;
-    els.choiceHint.textContent = "从这组里留下唯一一首";
-    els.choiceTitle.textContent = "哪一首值得先登岛？";
+    const tiebreak = state.phase === "landingTiebreak";
+    const ids = tiebreak ? state.landingTiebreak : state.groups[state.groupIndex];
+    const group = ids.map(byId);
+    els.stageEnglish.textContent = tiebreak ? "TOP 32 PLAY-IN" : "LANDING ROUND";
+    els.stageTitle.textContent = tiebreak ? `三十二强加赛 · ${ids.length}选一` : `登岛海选 · ${ids.length}选一`;
+    els.stageCounter.textContent = tiebreak ? "最后一组" : `${state.groupIndex + 1} / ${state.groups.length}`;
+    els.roundProgress.style.width = tiebreak ? "100%" : `${(state.groupIndex / state.groups.length) * 100}%`;
+    els.choiceHint.textContent = tiebreak ? "最后一个三十二强席位" : "从这组里留下唯一一首";
+    els.choiceTitle.textContent = tiebreak ? "谁来拿到最后一张通行票？" : "哪一首值得先登岛？";
     els.choiceGrid.className = "choice-grid four-up";
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
     if (!Number.isFinite(state.landingGroupStartedAt)) {
       state.landingGroupStartedAt = Date.now();
       save();
     }
-    els.unfamiliarAction.hidden = false;
+    els.unfamiliarAction.hidden = tiebreak;
     els.matchNote.hidden = false;
     updateUndo();
     showView("battle");
@@ -342,6 +346,14 @@
       return;
     }
     const landing = [...state.directSeeds, ...state.groupWinners];
+    if (landing.length > state.firstStageTarget) {
+      const playoffSize = landing.length - state.firstStageTarget + 1;
+      state.landingTiebreak = shuffled(landing).slice(0, playoffSize);
+      state.phase = "landingTiebreak";
+      save();
+      renderLanding();
+      return;
+    }
     state.revivalSlots = state.firstStageTarget - landing.length;
     state.selection = [];
     state.selectionMode = "revival";
@@ -356,13 +368,29 @@
     renderSelection();
   }
 
+  function chooseLandingTiebreak(winnerId) {
+    pushHistory();
+    const contenders = [...state.landingTiebreak];
+    contenders.forEach((id) => { if (id !== winnerId) state.eliminated.push(id); });
+    const qualified = [...state.directSeeds, ...state.groupWinners].filter((id) => !contenders.includes(id));
+    qualified.push(winnerId);
+    state.landingTiebreak = [];
+    launchFirstDuel(qualified);
+    save();
+    renderCheckpoint();
+  }
+
   function renderDuel() {
     const pair = state.duelPairs[state.duelIndex].map(byId);
     const isFinal = state.phase === "final";
-    const isTop40 = state.phase === "duel40";
-    const isTop20 = state.phase === "duel20";
-    els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : (isTop40 ? "COASTLINE DUEL" : (isTop20 ? "TIDAL DUEL" : "INNER ISLAND DUEL"));
-    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : (isTop40 ? "四十进二十 · 二选一" : (isTop20 ? "二十进十 · 二选一" : "十进五 · 二选一"));
+    const stageMeta = {
+      duel32: ["COASTLINE DUEL", "三十二进十六 · 二选一"],
+      duel16: ["TIDAL DUEL", "十六进八 · 二选一"],
+      duel8: ["INNER ISLAND DUEL", "八进四 · 二选一"],
+      duel4: ["SUMMIT DUEL", "四进二 · 二选一"]
+    };
+    els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : stageMeta[state.phase][0];
+    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : stageMeta[state.phase][1];
     els.stageCounter.textContent = `${state.duelIndex + 1} / ${state.duelPairs.length}`;
     els.roundProgress.style.width = `${(state.duelIndex / state.duelPairs.length) * 100}%`;
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
@@ -389,23 +417,31 @@
       label: ROUND_LABELS[state.phase],
       matches: state.duelPairs.map((pair, index) => ({ songs: [...pair], winner: state.duelWinners[index] }))
     });
-    if (state.phase === "duel40") {
-      state.top20 = [...state.duelWinners];
-      state.duelPairs = makeDuelPairs(state.top20);
+    if (state.phase === "duel32") {
+      state.top16 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top16);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("二十座音乐岛已经亮起", "下一站二十进十，偏爱继续收紧。", "duel20", true);
-    } else if (state.phase === "duel20") {
-      state.top10 = [...state.duelWinners];
-      state.duelPairs = makeDuelPairs(state.top10);
+      setCheckpoint("十六座音乐岛已经亮起", "下一站十六进八，偏爱继续收紧。", "duel16", true);
+    } else if (state.phase === "duel16") {
+      state.top8 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top8);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("十座内岛已经升起", "接下来十进五，选择会变得更难。", "duel10", true);
-    } else if (state.phase === "duel10") {
-      state.top5 = [...state.duelWinners];
-      state.selection = [];
-      state.selectionMode = "council";
-      setCheckpoint("五首歌抵达岛心", "下一站是岛主议会：五选二。", "council", true);
+      setCheckpoint("八座内岛已经升起", "接下来八进四，选择会变得更难。", "duel8", true);
+    } else if (state.phase === "duel8") {
+      state.top4 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top4);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("四首歌抵达岛心", "下一站四进二，决赛席位即将揭晓。", "duel4", true);
+    } else if (state.phase === "duel4") {
+      state.top2 = [...state.duelWinners];
+      state.finalists = [...state.top2];
+      state.duelPairs = [[...state.top2]];
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，决定你的蛋岛岛主。", "final", true);
     } else {
       state.champion = winnerId;
       state.phase = "complete";
@@ -420,31 +456,25 @@
   }
 
   function selectionCandidates() {
-    return state.selectionMode === "revival" ? state.eliminated.map(byId) : state.top5.map(byId);
+    return state.eliminated.map(byId);
   }
 
   function selectionLimit() {
-    return state.selectionMode === "revival" ? state.revivalSlots : 2;
+    return state.revivalSlots;
   }
 
   function renderSelection() {
-    const revival = state.selectionMode === "revival";
     const limit = selectionLimit();
-    $("#selectionEyebrow").textContent = revival ? "TIDAL REVIVAL" : "ISLAND COUNCIL";
-    $("#selectionTitle").textContent = revival ? "潮水送回一些遗珠" : "五强进入岛主议会";
-    $("#selectionCopy").innerHTML = revival
-      ? `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足${state.firstStageTarget === 40 ? "四十" : "二十"}强。`
-      : `从五强中同时选出 <b id="selectionNeed">2</b> 首，进入最终决选。`;
+    $("#selectionEyebrow").textContent = "TIDAL REVIVAL";
+    $("#selectionTitle").textContent = "潮水送回一些遗珠";
+    $("#selectionCopy").innerHTML = `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足三十二强。`;
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
-    els.selectionGrid.className = revival ? "selection-grid compact-grid" : "selection-grid";
-    els.selectionGrid.innerHTML = selectionCandidates().map((song) => revival ? `
+    els.selectionGrid.className = "selection-grid compact-grid";
+    els.selectionGrid.innerHTML = selectionCandidates().map((song) => `
       <button class="select-card compact source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}" title="${song.title}">
         <span aria-hidden="true">+</span><b>${song.title}</b>
-      </button>` : `
-      <button class="select-card source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}">
-        ${imageMarkup(song)}<div><b>${song.title}</b><small>${song.release}</small></div>
       </button>`).join("");
     showView("selection");
   }
@@ -461,31 +491,21 @@
 
   function confirmSelection() {
     if (state.selection.length !== selectionLimit()) return;
-    if (state.selectionMode === "revival") {
-      launchFirstDuel([...state.directSeeds, ...state.groupWinners, ...state.selection]);
-    } else {
-      state.finalists = [...state.selection];
-      state.duelPairs = [[...state.finalists]];
-      state.duelIndex = 0;
-      state.duelWinners = [];
-      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，决定你的蛋岛岛主。", "final");
-    }
+    launchFirstDuel([...state.directSeeds, ...state.groupWinners, ...state.selection]);
     state.selection = [];
     save();
     renderCheckpoint();
   }
 
   function launchFirstDuel(ids) {
-    const startsAt40 = state.firstStageTarget === 40;
-    if (startsAt40) state.top40 = [...ids];
-    else state.top20 = [...ids];
+    state.top32 = [...ids];
     state.duelPairs = makeDuelPairs(ids);
     state.duelIndex = 0;
     state.duelWinners = [];
     setCheckpoint(
       `${state.firstStageTarget} 首歌进入环岛航线`,
       "海选与复活完成，下一站开始双歌对决。",
-      startsAt40 ? "duel40" : "duel20"
+      "duel32"
     );
   }
 
@@ -494,15 +514,9 @@
     state.checkpoint = { title, copy, nextPhase, undoable };
   }
 
-  function councilOrder(ids) {
-    if (state.finalists?.length !== 2) return ids;
-    const remaining = ids.filter((id) => !state.finalists.includes(id));
-    return [remaining[0], state.finalists[0], remaining[1], state.finalists[1], ...remaining.slice(2)].filter(Boolean);
-  }
-
   function trajectoryStages() {
-    const phases = state.firstStageTarget === 40 ? ["duel40", "duel20", "duel10"] : ["duel20", "duel10"];
-    const counts = state.firstStageTarget === 40 ? [40, 20, 10, 5, 2, 1] : [20, 10, 5, 2, 1];
+    const phases = ["duel32", "duel16", "duel8", "duel4"];
+    const counts = [32, 16, 8, 4, 2, 1];
     const rounds = phases.map((phase) => {
       const completed = state.bracketRounds.find((round) => round.phase === phase);
       if (completed) return { phase, matches: completed.matches.map((match) => ({ ...match, songs: [...match.songs] })) };
@@ -516,11 +530,6 @@
 
     const available = rounds.filter(Boolean);
     if (available.length) {
-      const last = available.at(-1);
-      if (last.matches.every((match) => match.winner)) {
-        const desired = councilOrder(last.matches.map((match) => match.winner));
-        last.matches.sort((a, b) => desired.indexOf(a.winner) - desired.indexOf(b.winner));
-      }
       for (let index = available.length - 2; index >= 0; index -= 1) {
         const desired = available[index + 1].matches.flatMap((match) => match.songs);
         available[index].matches.sort((a, b) => desired.indexOf(a.winner) - desired.indexOf(b.winner));
@@ -530,7 +539,7 @@
     const labels = counts.map((count) => count === 1 ? "冠军" : `${count}强`);
     const idsByStage = counts.map(() => []);
     if (rounds[0]) idsByStage[0] = rounds[0].matches.flatMap((match) => match.songs);
-    else idsByStage[0] = state.firstStageTarget === 40 ? [...state.top40] : [...state.top20];
+    else idsByStage[0] = [...state.top32];
     phases.forEach((phase, index) => {
       const round = rounds[index];
       if (round?.matches.every((match) => match.winner)) idsByStage[index + 1] = round.matches.map((match) => match.winner);
@@ -587,9 +596,9 @@
 
   function renderCurrent() {
     if (!state) return showView("home");
-    if (state.phase === "landing") renderLanding();
-    else if (["duel40", "duel20", "duel10", "final"].includes(state.phase)) renderDuel();
-    else if (["revival", "council"].includes(state.phase)) renderSelection();
+    if (["landing", "landingTiebreak"].includes(state.phase)) renderLanding();
+    else if (["duel32", "duel16", "duel8", "duel4", "final"].includes(state.phase)) renderDuel();
+    else if (state.phase === "revival") renderSelection();
     else if (state.phase === "checkpoint") renderCheckpoint();
     else if (state.phase === "complete") renderResult();
   }
@@ -714,7 +723,7 @@
     ctx.fillText("完整晋级轨迹", 45, 352);
     ctx.fillStyle = "#708074";
     ctx.font = "14px 'Microsoft YaHei'";
-    ctx.fillText("格高与字号逐轮递增 · 五强经岛主议会选出决赛席位", 255, 351);
+    ctx.fillText("三十二强至冠军 · 格高与字号逐轮递增", 315, 351);
 
     const stages = trajectoryStages();
     const boardX = 45;
@@ -724,7 +733,7 @@
     const headerH = 42;
     const widthWeights = stages.map((_, index) => .82 + index * .13);
     const weightTotal = widthWeights.reduce((sum, value) => sum + value, 0);
-    const colors = ["#f4ef99", "#9ddfe0", "#bdebc3", "#ffd3ad", "#acd1f3", "#efafd5"];
+    const colors = ["#e6e0e9", "#d8d0df", "#c9bfd3", "#b9acc5", "#a897b7", "#8b759d"];
     let x = boardX;
     stages.forEach((stage, stageIndex) => {
       const columnW = stageIndex === stages.length - 1
@@ -810,6 +819,7 @@
       const button = event.target.closest("[data-song-id]");
       if (!button) return;
       if (state.phase === "landing") chooseLanding(button.dataset.songId);
+      else if (state.phase === "landingTiebreak") chooseLandingTiebreak(button.dataset.songId);
       else chooseDuel(button.dataset.songId);
     });
     els.unfamiliarAction.addEventListener("click", () => chooseLanding(null));
