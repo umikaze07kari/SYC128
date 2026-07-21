@@ -284,6 +284,18 @@
     return song.lyricExcerpt || "";
   }
 
+  function lyricMarkup(lyric) {
+    const escaped = lyric
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    // Both a real line break and a literal `\\n` in imported data can be used
+    // to choose the line break position of a highlight lyric.
+    return escaped.replace(/\\n|\r?\n/g, "<br>");
+  }
+
   function choiceCard(song) {
     const lyric = shortLine(song);
     return `
@@ -292,7 +304,7 @@
         <div class="choice-info">
           <h3><span>${song.title}</span></h3>
           <small>${song.release}</small>
-          ${lyric ? `<div class="mini-lyric">${lyric}</div>` : ""}
+          ${lyric ? `<div class="mini-lyric">${lyricMarkup(lyric)}</div>` : ""}
         </div>
       </button>`;
   }
@@ -427,7 +439,7 @@
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
     els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : "这一组，谁继续向岛心前进？";
     els.choiceGrid.className = "choice-grid duel";
-    els.choiceGrid.innerHTML = pair.map(choiceCard).join("");
+    els.choiceGrid.innerHTML = `${choiceCard(pair[0])}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1])}`;
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
     updateUndo();

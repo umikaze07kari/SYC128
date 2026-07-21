@@ -303,3 +303,146 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 .page-credit a { color:#78887c; text-decoration:none; border-bottom:1px dotted rgba(71,99,78,.32); }
 .page-credit a:hover { color:#397a69; }
 .result-credit { margin-top:16px; }
+
+/* Battle card refinements: quiet paper, one vivid editorial accent. */
+.cover-frame::before {
+  width:22px;
+  height:22px;
+  top:-7px;
+  border:1px solid color-mix(in srgb,var(--vivid) 34%,#b7b8b2);
+  border-radius:50%;
+  opacity:.76;
+  background:
+    radial-gradient(circle,var(--vivid) 0 1px,transparent 1.4px) 0 0 / 6px 6px,
+    rgba(251,250,245,.82);
+  box-shadow:0 2px 0 rgba(66,70,65,.08);
+}
+.choice-info h3 {
+  position:relative;
+  padding-left:11px;
+}
+.choice-info h3::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:.08em;
+  bottom:.12em;
+  width:3px;
+  min-height:1em;
+  border-radius:3px;
+  background:linear-gradient(180deg,var(--vivid),var(--vivid-2));
+}
+.choice-info h3 span {
+  padding-bottom:0;
+  background:none;
+}
+.choice-info > small {
+  color:var(--vivid);
+  font-weight:650;
+}
+.mini-lyric {
+  color:#68736c;
+}
+.mini-lyric br { display:block; }
+
+/* The four-up cards use a small printed corner motif instead of tape blocks. */
+.choice-grid.four-up .choice-info::before {
+  right:-13px;
+  bottom:-12px;
+  width:76px;
+  height:58px;
+  border-radius:52% 0 0 0;
+  opacity:.38;
+  background:
+    radial-gradient(circle at 65% 58%,var(--vivid-2) 0 1.3px,transparent 1.8px) 0 0 / 9px 9px,
+    repeating-linear-gradient(-38deg,transparent 0 8px,var(--vivid) 8px 9px,transparent 9px 17px);
+  transform:rotate(-3deg);
+}
+
+.choice-grid.duel {
+  position:relative;
+  grid-template-columns:minmax(0,340px) 44px minmax(0,340px);
+  align-items:center;
+  gap:12px;
+}
+.duel-versus {
+  position:relative;
+  z-index:5;
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(91,75,139,.2);
+  border-radius:50%;
+  color:#66549b;
+  background:#fbfaf5;
+  box-shadow:3px 3px 0 #e3ddf7;
+  font:900 12px/1 ui-monospace,Consolas,monospace;
+  letter-spacing:.04em;
+  transform:rotate(-4deg);
+}
+
+@media (max-width:760px) {
+  .choice-grid.duel {
+    max-width:500px;
+    grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);
+    gap:5px;
+    padding:2px 0 4px;
+  }
+  .choice-grid.duel .cover-choice {
+    width:100%;
+    height:auto;
+    min-height:0;
+    aspect-ratio:auto;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .choice-grid.duel .cover-frame {
+    position:relative;
+    inset:auto;
+    width:calc(100% - 12px);
+    height:auto;
+    aspect-ratio:1;
+    flex:0 0 auto;
+    margin:6px 6px 0;
+    border-radius:5px 5px 0 0;
+  }
+  .choice-grid.duel .choice-info {
+    position:relative;
+    inset:auto;
+    min-height:124px;
+    flex:1 1 auto;
+    justify-content:flex-start;
+    padding:10px 9px 9px;
+  }
+  .choice-grid.duel .choice-info h3 {
+    max-height:2.25em;
+    padding-right:2px;
+    font-size:clamp(17px,4.8vw,22px);
+    line-height:1.08;
+  }
+  .choice-grid.duel .choice-info > small {
+    display:block;
+    max-width:100%;
+    overflow:hidden;
+    padding:0;
+    font-size:9px;
+    line-height:1.25;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .choice-grid.duel .mini-lyric {
+    width:100%;
+    padding:4px 1px 0 15px;
+    font-size:10px;
+    line-height:1.25;
+  }
+  .choice-grid.duel .mini-lyric::before { left:1px; font-size:18px; }
+  .duel-versus {
+    width:32px;
+    height:32px;
+    font-size:10px;
+    box-shadow:2px 2px 0 #e3ddf7;
+  }
+}

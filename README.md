@@ -68,5 +68,5 @@ powershell -ExecutionPolicy Bypass -File scripts/capture_mobile.ps1 -Url http://
 - 来源类型：`album`、`single`、`ost`、`variety`、`other`；《歌手2025》也归入音乐综艺 `variety`。
 - 演唱形式：`solo` 或 `collab`。例如合唱个人单曲使用 `source: "single"` 和 `vocal: "collab"`。
 - `seedScore` 只用于首轮分区，不在页面展示，也不对应任何平台播放量或收藏量。
-- 每首歌生成后都有 `lyricExcerpt` 字段。请在 `HIGHLIGHT_LYRICS` 中按歌曲 `id` 人工填写高光歌词；留空时卡片显示原创听感提示。
+- 每首歌生成后都有 `lyricExcerpt` 字段。请在 `HIGHLIGHT_LYRICS` 中按歌曲 `id` 人工填写高光歌词；留空时卡片显示原创听感提示。较长歌词可在字符串中写 `\n`，手动指定卡片中的换行位置，例如 `"第一句\n第二句"`。
 - 修改静态文件后如测试设备仍显示旧页面，请递增 `sw.js` 的缓存版本以刷新离线缓存。
