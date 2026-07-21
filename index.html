@@ -154,7 +154,11 @@
     <button class="modal-close" data-close-poster type="button">×</button>
     <p class="eyebrow">ISLAND POSTER</p>
     <h2>你的蛋岛环游长图</h2>
-    <div class="poster-wrap"><canvas id="resultCanvas" width="900" height="1950"></canvas></div>
+    <div class="poster-wrap">
+      <canvas id="resultCanvas" width="900" height="1950"></canvas>
+      <img id="resultPosterImage" alt="你的蛋岛环游长图，微信中可长按保存或分享" hidden>
+    </div>
+    <p class="poster-save-hint" id="posterSaveHint" hidden>请长按上方图片，在微信菜单中选择“保存图片”或“发送给朋友”</p>
     <div class="poster-actions"><button class="primary-button" id="downloadPoster" type="button">保存 PNG</button><button class="soft-button" id="sharePoster" type="button">分享</button></div>
   </dialog>
 

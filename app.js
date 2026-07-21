@@ -73,6 +73,8 @@
     aboutDialog: $("#aboutDialog"),
     posterDialog: $("#posterDialog"),
     canvas: $("#resultCanvas"),
+    posterImage: $("#resultPosterImage"),
+    posterSaveHint: $("#posterSaveHint"),
     resultQr: $("#resultQr"),
     submissionStatus: $("#submissionStatus"),
     toast: $("#toast")
@@ -82,6 +84,7 @@
   let posterBlob = null;
   let toastTimer = null;
   let audio = null;
+  const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
   const preloadedCovers = new Set();
 
   function showToast(message) {
@@ -1121,11 +1124,34 @@
 
   async function openPoster() {
     await drawPoster();
+    if (isWeChat) {
+      // WeChat blocks Blob downloads and file sharing. A real image element can
+      // still be saved or forwarded from its native long-press menu.
+      els.posterImage.src = els.canvas.toDataURL("image/png");
+      els.posterImage.hidden = false;
+      els.canvas.hidden = true;
+      els.posterSaveHint.hidden = false;
+      $("#downloadPoster").textContent = "长按图片保存";
+      $("#sharePoster").textContent = "长按图片分享";
+    } else {
+      els.posterImage.hidden = true;
+      els.canvas.hidden = false;
+      els.posterSaveHint.hidden = true;
+    }
     els.posterDialog.showModal();
+  }
+
+  function showWechatPosterGuide() {
+    els.posterImage.scrollIntoView({ behavior: "smooth", block: "center" });
+    showToast("请长按图片，选择“保存图片”或“发送给朋友”");
   }
 
   function downloadPoster() {
     if (!posterBlob) return;
+    if (isWeChat) {
+      showWechatPosterGuide();
+      return;
+    }
     const url = URL.createObjectURL(posterBlob);
     const link = document.createElement("a");
     link.href = url;
@@ -1136,6 +1162,10 @@
 
   async function sharePoster() {
     if (!posterBlob) return;
+    if (isWeChat) {
+      showWechatPosterGuide();
+      return;
+    }
     const winner = byId(state.champion);
     const file = new File([posterBlob], `蛋岛环游记-${winner.title}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
