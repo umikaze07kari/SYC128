@@ -68,13 +68,13 @@ const rawSongs = [
   // 单曲
   ["zai-ye-li-tiao-wu", "在夜里跳舞", "single", "solo", "律动", "个人单曲", 96],
   ["wei", "喂", "single", "solo", "轻快", "个人单曲", 90],
-  ["ai-wo-de-shi-hou", "爱我的时候", "single", "solo", "抒情", "个人单曲", 88],
+  ["ai-wo-de-shi-hou", "爱我的时候", "single", "collab", "抒情", "个人单曲", 88],
   ["zhao-pian", "照片", "single", "solo", "叙事", "个人单曲", 85],
   ["oh-lala", "Oh lala", "single", "solo", "R&B", "合作企划《DNA》", 72],
   ["tender", "TENDER", "single", "solo", "R&B", "个人单曲", 67],
   ["luo-bi-cheng-shu", "落笔成书", "single", "solo", "国风", "个人单曲", 66],
   ["zhong-shen-gu-du", "终身孤独", "single", "solo", "情绪", "个人单曲", 64],
-  ["4ever-in-u", "4ever in U", "single", "collab", "R&B", "合作数字单曲", 64],
+  ["4ever-in-u", "4ever in U", "single", "solo", "R&B", "合作数字单曲", 64],
   ["fen-shen", "分身", "single", "solo", "情绪", "个人单曲", 61],
   ["qi-guan", "奇观", "single", "solo", "大气", "个人单曲", 61],
   ["liang-zai-ri-ji", "靓仔日记", "single", "solo", "轻快", "个人单曲", 58],
@@ -124,7 +124,7 @@ const rawSongs = [
   ["tian-ya-ge-nv-live", "天涯歌女", "live", "solo", "经典", "演唱会", 77],
   ["wang-shi-zhi-neng-hui-wei-live", "往事只能回味", "live", "solo", "经典", "演唱会", 77],
   ["shou-zi-live", "瘦子", "live", "solo", "律动", "演唱会", 75],
-  ["ye-jian-you-yong-chi-live", "夜间游泳池", "live", "solo", "氛围", "演唱会", 79],
+  ["ye-jian-you-yong-chi-live", "夜间游泳池", "live", "collab", "氛围", "演唱会", 79],
 
   // 综艺舞台：2020《中国好声音》
   ["xiang-feng-yi-yang", "像风一样", "variety", "solo", "抒情", "综艺《2020中国好声音》", 88],
@@ -136,11 +136,11 @@ const rawSongs = [
   ["xing-sailing", "星·Sailing", "variety", "solo", "大气", "综艺《2020中国好声音》", 77],
 
   // 《天赐的声音》
-  ["bu-bi-zai-hu-wo-shi-shei", "不必在乎我是谁", "variety", "solo", "抒情", "综艺《天赐的声音》", 78],
+  ["bu-bi-zai-hu-wo-shi-shei", "不必在乎我是谁", "variety", "collab", "抒情", "综艺《天赐的声音》", 78],
   ["xia-yu-tian", "下雨天", "variety", "solo", "抒情", "综艺《天赐的声音》", 80],
-  ["gen-ben-bu-shi-wo-dui-shou", "根本不是我对手", "variety", "solo", "律动", "综艺《天赐的声音》", 70],
-  ["she-li-duan", "舍离断", "variety", "solo", "国风", "综艺《天赐的声音》", 72],
-  ["yuan-liang", "原谅", "variety", "solo", "抒情", "综艺《天赐的声音》", 82],
+  ["gen-ben-bu-shi-wo-dui-shou", "根本不是我对手", "variety", "collab", "律动", "综艺《天赐的声音》", 70],
+  ["she-li-duan", "舍离断", "variety", "collab", "国风", "综艺《天赐的声音》", 72],
+  ["yuan-liang", "原谅", "variety", "collab", "抒情", "综艺《天赐的声音》", 82],
 
   ["soap", "Soap", "variety", "solo", "R&B", "综艺《为歌而赞》", 74],
 
@@ -153,8 +153,8 @@ const rawSongs = [
   // 《爆裂舞台》
   ["rnb-all-night", "R&B All Night", "variety", "solo", "R&B", "综艺《爆裂舞台》", 80],
   ["bie-wen-hen-ke-pa", "别问很可怕", "variety", "solo", "情绪", "综艺《爆裂舞台》", 78],
-  ["ma-ma-shuo", "妈妈说", "variety", "solo", "律动", "综艺《爆裂舞台》", 75],
-  ["get-away", "Get Away", "variety", "solo", "舞曲", "综艺《爆裂舞台》", 76],
+  ["ma-ma-shuo", "妈妈说", "variety", "collab", "律动", "综艺《爆裂舞台》", 75],
+  ["get-away", "Get Away", "variety", "collab", "舞曲", "综艺《爆裂舞台》", 76],
   ["bu-zhi-de", "不值得", "variety", "solo", "抒情", "综艺《爆裂舞台》", 81],
   ["lang", "狼", "variety", "solo", "摇滚", "综艺《爆裂舞台》", 79],
 
@@ -170,40 +170,40 @@ const rawSongs = [
   // 《声生不息·港乐季》
   ["ai-yu-tong-de-bian-yuan", "爱与痛的边缘", "variety", "solo", "抒情", "综艺《声生不息·港乐季》", 83],
   ["lai-sheng-yuan", "来生缘", "variety", "collab", "经典", "综艺《声生不息·港乐季》", 78],
-  ["gao-shan-di-gu", "高山低谷", "variety", "solo", "叙事", "综艺《声生不息·港乐季》", 82],
+  ["gao-shan-di-gu", "高山低谷", "variety", "collab", "叙事", "综艺《声生不息·港乐季》", 82],
   ["san-ren-you", "三人游", "variety", "collab", "R&B", "综艺《声生不息·港乐季》", 80],
   ["fen-fen-zhong-xu-yao-ni", "分分钟需要你", "variety", "collab", "轻快", "综艺《声生不息·港乐季》", 80],
-  ["zhe-me-jin-na-me-yuan", "这么近那么远", "variety", "solo", "氛围", "综艺《声生不息·港乐季》", 79],
+  ["zhe-me-jin-na-me-yuan", "这么近那么远", "variety", "collab", "氛围", "综艺《声生不息·港乐季》", 79],
   ["wei-ni-zhong-qing", "为你钟情", "variety", "collab", "抒情", "综艺《声生不息·港乐季》", 81],
   ["ai-shi-yong-heng", "爱是永恒", "variety", "collab", "大气", "综艺《声生不息·港乐季》", 82],
-  ["qian-yi-ge-ye-wan", "千亿个夜晚", "variety", "solo", "经典", "综艺《声生不息·港乐季》", 78],
+  ["qian-yi-ge-ye-wan", "千亿个夜晚", "variety", "collab", "经典", "综艺《声生不息·港乐季》", 78],
   ["ta-lai-ting-wo-de-yan-chang-hui", "她来听我的演唱会", "variety", "collab", "叙事", "综艺《声生不息·港乐季》", 84],
-  ["ru-guo-ai-wang-le", "如果爱忘了", "variety", "solo", "抒情", "综艺《声生不息·家年华》", 84],
+  ["ru-guo-ai-wang-le", "如果爱忘了", "variety", "collab", "抒情", "综艺《声生不息·家年华》", 84],
 
   // 《剧好听的歌》
   ["rang-ta-jiang-luo", "让她降落", "variety", "solo", "抒情", "综艺《剧好听的歌》", 80],
   ["zui-chang-de-lv-tu", "最长的旅途", "variety", "solo", "叙事", "综艺《剧好听的歌》", 79],
-  ["ai-de-hui-gui-xian", "爱的回归线", "variety", "collab", "抒情", "综艺《剧好听的歌》", 81],
+  ["ai-de-hui-gui-xian", "爱的回归线", "variety", "solo", "抒情", "综艺《剧好听的歌》", 81],
   ["xuan-cao-hua", "萱草花", "variety", "solo", "治愈", "综艺《剧好听的歌》", 82],
   ["wo-yao-ni", "我要你", "variety", "solo", "抒情", "综艺《剧好听的歌》", 78],
   ["dian-qi-jiao-jian-ai", "踮起脚尖爱", "variety", "solo", "抒情", "综艺《剧好听的歌》", 83],
 
   // 《音乐缘计划》与《国乐无双》
   ["tai-yang-gong-zhu", "太阳公主", "variety", "solo", "明亮", "综艺《音乐缘计划》", 78],
-  ["ming-zhi-gu-wen", "明知故问", "variety", "solo", "情绪", "综艺《音乐缘计划》", 80],
+  ["ming-zhi-gu-wen", "明知故问", "variety", "collab", "情绪", "综艺《音乐缘计划》", 80],
   ["let-me-go", "Let Me Go", "variety", "solo", "R&B", "综艺《音乐缘计划》", 77],
   ["gan-lan-shu", "橄榄树", "variety", "solo", "经典", "综艺《国乐无双》", 76],
 
   ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "single", "solo", "经典", "个人单曲 · 电影《一秒钟》推广曲", 74],
 
   // 晚会舞台
-  ["zhe-shi-jie-na-me-duo-ren", "这世界那么多人", "live", "solo", "抒情", "晚会舞台", 81],
+  ["zhe-shi-jie-na-me-duo-ren", "这世界那么多人", "live", "collab", "抒情", "晚会舞台", 81],
   ["this-is-me", "This is me", "live", "solo", "大气", "晚会舞台", 78],
   ["gui", "归", "live", "solo", "国风", "晚会舞台", 77],
   ["ru-yuan", "如愿", "live", "solo", "大气", "晚会舞台", 84],
   ["yi-zhi-hen-an-jing", "一直很安静", "live", "solo", "抒情", "晚会舞台", 82],
   ["si-nian", "思念", "live", "solo", "情绪", "晚会舞台", 79],
-  ["xin-huo", "心火", "live", "solo", "情绪", "晚会舞台", 78],
+  ["xin-huo", "心火", "live", "collab", "情绪", "晚会舞台", 78],
   ["cheng-shi-zhi-guang", "城市之光", "live", "solo", "明亮", "晚会舞台", 76],
   ["ni-jiu-bu-yao-xiang-qi-wo", "你就不要想起我", "live", "solo", "抒情", "晚会舞台", 83]
 ];
