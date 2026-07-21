@@ -1,11 +1,3 @@
-@font-face {
-  font-family: "Smiley Sans";
-  src: url("assets/fonts/SmileySans-Oblique.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --ink: #213025;
   --muted: #708074;
@@ -199,10 +191,39 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 .choice-info { min-height:80px; padding:11px 12px 10px; overflow:hidden; border:0; background:linear-gradient(174deg,rgba(255,255,255,.58),transparent 24%),repeating-linear-gradient(-34deg,transparent 0 23px,color-mix(in srgb,var(--vivid) 20%,transparent) 23px 24px,transparent 24px 47px),var(--paper); box-shadow:none; }
 .choice-info::before { right:-7px; bottom:-7px; width:50%; height:55%; opacity:.42; background:repeating-linear-gradient(-40deg,var(--vivid-2) 0 1px,transparent 1px 7px); transform:rotate(-3deg); }
 .choice-info::after { content:""; width:24px; height:7px; right:10px; top:9px; border-top:1px solid color-mix(in srgb,var(--card-accent) 40%,#888); border-bottom:1px solid color-mix(in srgb,var(--card-accent) 25%,#aaa); opacity:.65; transform:rotate(var(--note-rotate)); }
-.choice-info h3 { padding:0 31px 6px 0; color:#213025; background:linear-gradient(90deg,var(--vivid),var(--vivid-2)) 0 100% / min(78px,46%) 3px no-repeat; font-family:"Smiley Sans","Noto Sans SC","PingFang SC",sans-serif; font-weight:400; letter-spacing:.015em; }
-.choice-info > small { border:0; border-radius:0; color:#59645d; background:transparent; padding:0; font-family:"Smiley Sans","Noto Sans SC","PingFang SC",sans-serif; letter-spacing:.025em; }
-.mini-lyric { border:0; border-radius:0; color:#4f5c54; background:rgba(255,255,255,.42); box-shadow:none; padding:4px 5px 0 18px; font-family:"Smiley Sans","Noto Sans SC","PingFang SC",sans-serif; letter-spacing:.02em; }
+.choice-info h3 { padding:0 31px 6px 0; color:#213025; background:linear-gradient(90deg,var(--vivid),var(--vivid-2)) 0 100% / min(78px,46%) 3px no-repeat; font-family:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif; font-weight:650; letter-spacing:.08em; }
+.choice-info > small { border:0; border-radius:0; color:#59645d; background:transparent; padding:0; font-family:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif; font-weight:400; letter-spacing:.06em; }
+.mini-lyric { border:0; border-radius:0; color:#4f5c54; background:rgba(255,255,255,.42); box-shadow:none; padding:4px 5px 0 18px; font-family:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif; font-weight:400; letter-spacing:.06em; }
 .mini-lyric::before { left:2px; color:#7a877e; }
+
+.cover-frame em { font-family:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif; font-weight:400; letter-spacing:.05em; }
+
+#startJourney { position:relative; isolation:isolate; overflow:hidden; background:linear-gradient(115deg,#38a5ad,#397e72 56%,#315c55); box-shadow:5px 5px 0 #d9cfff,0 12px 24px rgba(42,119,124,.16); animation:startButtonFloat 3.2s ease-in-out infinite; }
+#startJourney::before { content:""; position:absolute; z-index:-1; width:150%; height:46px; left:-28%; bottom:-31px; border-radius:42% 48% 45% 52%; background:rgba(150,231,239,.43); animation:startButtonWave 4s linear infinite; }
+#startJourney::after { content:""; position:absolute; z-index:-1; width:7px; height:7px; right:23%; top:12px; border:1px solid rgba(255,255,255,.65); border-radius:50%; box-shadow:15px 8px 0 -2px rgba(255,255,255,.34),-12px 16px 0 -1px rgba(255,255,255,.24); animation:startBubbles 2.8s ease-in-out infinite; }
+#startJourney .button-label { position:relative; margin:0; }
+#startJourney > span:last-child { position:relative; }
+@keyframes startButtonFloat { 50% { transform:translateY(-2px) rotate(-.25deg); } }
+@keyframes startButtonWave { to { transform:translateX(20%) rotate(7deg); } }
+@keyframes startBubbles { 50% { transform:translateY(-5px); opacity:.5; } }
+
+.invite-card { position:relative; isolation:isolate; overflow:hidden; min-height:168px; padding-bottom:48px; background:linear-gradient(155deg,#f5fbf8 0 54%,#dff5fb 54% 100%); }
+.invite-copy,.qr-shell { position:relative; z-index:3; }
+.invite-copy span { color:#2489a4; }
+.drift-scene { position:absolute; z-index:1; inset:auto 0 0; height:59px; overflow:hidden; pointer-events:none; }
+.drift-scene::before,.drift-scene::after { content:""; position:absolute; z-index:3; width:5px; height:5px; border:1px solid rgba(255,255,255,.75); border-radius:50%; bottom:28px; left:22%; animation:driftBubble 3s ease-in-out infinite; }
+.drift-scene::after { width:8px; height:8px; left:auto; right:19%; bottom:15px; animation-delay:-1.4s; }
+.drift-wave { position:absolute; left:-12%; width:124%; height:47px; border-radius:44% 52% 0 0 / 18px 22px 0 0; }
+.wave-one { z-index:1; bottom:-17px; background:rgba(67,184,220,.45); animation:driftWaveOne 5.2s ease-in-out infinite alternate; }
+.wave-two { z-index:2; bottom:-27px; background:rgba(35,137,195,.42); animation:driftWaveTwo 4.3s ease-in-out infinite alternate-reverse; }
+.drift-bottle { position:absolute; z-index:4; left:68%; bottom:23px; width:18px; height:34px; border:2px solid rgba(31,119,142,.58); border-radius:5px 5px 8px 8px; background:rgba(244,253,249,.82); box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),2px 4px 7px rgba(23,105,133,.14); transform:rotate(14deg); animation:driftBottle 3.1s ease-in-out infinite; }
+.drift-bottle::before { content:""; position:absolute; width:9px; height:7px; left:2px; top:-8px; border:2px solid rgba(31,119,142,.58); border-bottom:0; border-radius:2px 2px 0 0; background:#d29d65; }
+.drift-bottle::after { content:"♥"; position:absolute; left:3px; top:10px; color:#ef6d88; font:700 9px/1 Arial,sans-serif; }
+.drift-bottle i { position:absolute; width:10px; height:7px; left:2px; bottom:4px; border-top:1px solid #e7a95e; border-bottom:1px solid #e7a95e; background:#fff7d9; transform:rotate(-5deg); }
+@keyframes driftWaveOne { to { transform:translateX(7%) translateY(3px) rotate(1deg); } }
+@keyframes driftWaveTwo { to { transform:translateX(-6%) translateY(-2px) rotate(-1deg); } }
+@keyframes driftBottle { 0%,100% { transform:translateY(1px) rotate(12deg); } 50% { transform:translateY(-8px) rotate(20deg); } }
+@keyframes driftBubble { 50% { transform:translateY(-12px) scale(.72); opacity:.24; } }
 
 @media (max-width: 760px) {
   .topbar { width:calc(100% - 24px); height:64px; }
@@ -230,3 +251,55 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
   .collection-group { padding:8px; }
   .collection-switch span { font-size:8.5px; }
 }
+
+/* Adaptive card typography and quiet credits */
+.choice-info h3 {
+  display:block;
+  max-height:2.35em;
+  overflow:hidden;
+  padding:0 31px 2px 0;
+  background:none;
+  line-height:1.12;
+  text-overflow:clip;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  -webkit-line-clamp:unset;
+}
+.choice-info h3 span {
+  padding-bottom:4px;
+  background:linear-gradient(90deg,var(--vivid),var(--vivid-2)) left calc(100% - 1px) / 100% 3px no-repeat;
+  -webkit-box-decoration-break:clone;
+  box-decoration-break:clone;
+}
+.mini-lyric {
+  align-self:flex-start;
+  width:fit-content;
+  max-width:100%;
+  display:-webkit-box;
+  overflow:hidden;
+  border-radius:3px 7px 4px 5px;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+}
+.trajectory-cell span {
+  display:block;
+  max-width:100%;
+  max-height:100%;
+  overflow:hidden;
+  line-height:1.04;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  -webkit-line-clamp:unset;
+}
+.trajectory-cell.name-long span { letter-spacing:-.04em; transform:scale(.9); }
+.trajectory-cell.name-xlong span { letter-spacing:-.07em; transform:scale(.78); }
+.page-credit { display:flex; justify-content:center; align-items:center; gap:6px; margin:12px 0 0; color:#9aa39c; font-size:8px; letter-spacing:.04em; }
+.page-credit a { color:#78887c; text-decoration:none; border-bottom:1px dotted rgba(71,99,78,.32); }
+.page-credit a:hover { color:#397a69; }
+.result-credit { margin-top:16px; }

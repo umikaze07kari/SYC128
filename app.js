@@ -18,7 +18,7 @@
     { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
     { key: "ourSong", group: "classic", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
     { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
-    { key: "singer2025", group: "other", label: "歌手2025", match: (song) => song.source === "live" },
+    { key: "singer2025", group: "other", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
     { key: "dramaSongs", group: "other", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
     { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
     { key: "chinaMusic", group: "other", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
@@ -34,7 +34,7 @@
     duel16: "十六进八",
     duel8: "八进四",
     duel4: "四进二",
-    final: "岛主决选"
+    final: "挚爱决选"
   };
 
   const $ = (selector, root = document) => root.querySelector(selector);
@@ -273,7 +273,7 @@
   function updateContinue() {
     const saved = load();
     els.continueJourney.hidden = !saved;
-    if (saved) els.continueJourney.textContent = saved.phase === "complete" ? "查看上次岛主" : "继续上次环游";
+    if (saved) els.continueJourney.textContent = saved.phase === "complete" ? "查看上次 Top 1" : "继续上次环游";
   }
 
   function imageMarkup(song, className = "") {
@@ -290,7 +290,7 @@
       <button class="cover-choice source-${song.source}${lyric ? "" : " no-lyric"}" type="button" data-song-id="${song.id}">
         <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}${song.vocal === "collab" ? " · 合唱" : ""}</em></div>
         <div class="choice-info">
-          <h3>${song.title}</h3>
+          <h3><span>${song.title}</span></h3>
           <small>${song.release}</small>
           ${lyric ? `<div class="mini-lyric">${lyric}</div>` : ""}
         </div>
@@ -421,11 +421,11 @@
       duel4: ["SUMMIT DUEL", "四进二 · 二选一"]
     };
     els.stageEnglish.textContent = isFinal ? "ISLAND OWNER FINAL" : stageMeta[state.phase][0];
-    els.stageTitle.textContent = isFinal ? "岛主决选 · 二选一" : stageMeta[state.phase][1];
+    els.stageTitle.textContent = isFinal ? "挚爱决选 · 二选一" : stageMeta[state.phase][1];
     els.stageCounter.textContent = `${state.duelIndex + 1} / ${state.duelPairs.length}`;
     els.roundProgress.style.width = `${(state.duelIndex / state.duelPairs.length) * 100}%`;
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
-    els.choiceTitle.textContent = isFinal ? "谁来成为蛋岛岛主？" : "这一组，谁继续向岛心前进？";
+    els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : "这一组，谁继续向岛心前进？";
     els.choiceGrid.className = "choice-grid duel";
     els.choiceGrid.innerHTML = pair.map(choiceCard).join("");
     els.unfamiliarAction.hidden = true;
@@ -472,7 +472,7 @@
       state.duelPairs = [[...state.top2]];
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，决定你的蛋岛岛主。", "final", true);
+      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，选出你心里的单曲 Top 1。", "final", true);
     } else {
       state.champion = winnerId;
       state.phase = "complete";
@@ -495,7 +495,7 @@
   }
 
   function groupedSelectionCandidates() {
-    const sourceOrder = ["album", "single", "ost", "live", "variety", "other"];
+    const sourceOrder = ["album", "single", "ost", "variety", "other"];
     const grouped = selectionCandidates().reduce((result, song) => {
       (result[song.source] ||= []).push(song);
       return result;
@@ -587,7 +587,7 @@
       }
     }
 
-    const labels = counts.map((count) => count === 1 ? "冠军" : `${count}强`);
+    const labels = counts.map((count) => count === 1 ? "Top 1" : `${count}强`);
     const idsByStage = counts.map(() => []);
     if (rounds[0]) idsByStage[0] = rounds[0].matches.flatMap((match) => match.songs);
     else idsByStage[0] = [...state.top32];
@@ -609,7 +609,9 @@
         <b class="trajectory-head">${stage.label}</b>
         <div class="trajectory-cells">${Array.from({ length: stage.expected }, (_, index) => {
           const song = stage.ids[index] ? byId(stage.ids[index]) : null;
-          return `<div class="trajectory-cell${song ? "" : " pending"}"${song ? ` title="${song.title}"` : ""}><span>${song?.title || ""}</span></div>`;
+          const titleLength = song ? [...song.title].length : 0;
+          const lengthClass = titleLength > 12 ? " name-xlong" : titleLength > 8 ? " name-long" : "";
+          return `<div class="trajectory-cell${song ? "" : " pending"}${lengthClass}"${song ? ` title="${song.title}"` : ""}><span>${song?.title || ""}</span></div>`;
         }).join("")}</div>
       </section>`).join("")}</div>`;
   }
@@ -664,6 +666,40 @@
     let value = text;
     while (value.length && ctx.measureText(`${value}…`).width > width) value = value.slice(0, -1);
     return `${value}…`;
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth) {
+    const lines = [];
+    let line = "";
+    let lastSpace = -1;
+    for (const character of [...text]) {
+      const candidate = line + character;
+      if (ctx.measureText(candidate).width <= maxWidth || !line) {
+        line = candidate;
+        if (/\s/.test(character)) lastSpace = line.length - 1;
+        continue;
+      }
+      if (lastSpace >= 0) {
+        lines.push(line.slice(0, lastSpace).trimEnd());
+        line = `${line.slice(lastSpace + 1)}${character}`.trimStart();
+      } else {
+        lines.push(line);
+        line = character;
+      }
+      lastSpace = [...line].reduce((position, value, index) => (/\s/.test(value) ? index : position), -1);
+    }
+    if (line) lines.push(line.trim());
+    return lines.filter(Boolean);
+  }
+
+  function fitCanvasTitle(ctx, text, maxWidth, maxLines, startSize, weight) {
+    for (let fontSize = Math.floor(startSize); fontSize >= 8; fontSize -= 1) {
+      ctx.font = `${weight} ${fontSize}px 'Microsoft YaHei'`;
+      const lines = wrapCanvasText(ctx, text, maxWidth);
+      if (lines.length <= maxLines) return { lines, fontSize };
+    }
+    ctx.font = `${weight} 8px 'Microsoft YaHei'`;
+    return { lines: wrapCanvasText(ctx, text, maxWidth), fontSize: 8 };
   }
 
   function loadImage(source) {
@@ -737,7 +773,7 @@
     ctx.fillText("蛋岛环游记 · DAN ISLAND ODYSSEY", 45, 48);
     ctx.fillStyle = "#708074";
     ctx.font = "18px 'Microsoft YaHei'";
-    ctx.fillText("蛋岛环游记 / 我的唯一岛主", 45, 78);
+    ctx.fillText("蛋岛环游记 / 我的单曲 Top 1", 45, 78);
 
     const hero = ctx.createLinearGradient(45, 100, 855, 310);
     hero.addColorStop(0, "#284332");
@@ -751,13 +787,13 @@
     }
     ctx.fillStyle = "#f4ef99";
     ctx.font = "900 17px Arial";
-    ctx.fillText("OWNER OF DAN ISLAND", 82, 142);
+    ctx.fillText("MY ONE AND ONLY", 82, 142);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "22px 'Microsoft YaHei'";
-    ctx.fillText("我的蛋岛岛主是", 82, 178);
+    ctx.fillText("我心里的单依纯歌曲 Top 1", 82, 178);
     ctx.fillStyle = "#fff";
-    ctx.font = "900 50px 'Microsoft YaHei'";
-    ctx.fillText(fitText(ctx, winner.title, 520), 82, 235);
+    const winnerTitle = fitCanvasTitle(ctx, winner.title, 520, 1, 50, 900);
+    ctx.fillText(winnerTitle.lines[0], 82, 235);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "20px 'Microsoft YaHei'";
     ctx.fillText(fitText(ctx, winner.release, 520), 84, 275);
@@ -774,7 +810,7 @@
     ctx.fillText("完整晋级轨迹", 45, 352);
     ctx.fillStyle = "#708074";
     ctx.font = "14px 'Microsoft YaHei'";
-    ctx.fillText("三十二强至冠军 · 格高与字号逐轮递增", 315, 351);
+    ctx.fillText("三十二强至 Top 1 · 歌名自动换行", 315, 351);
 
     const stages = trajectoryStages();
     const boardX = 45;
@@ -809,9 +845,15 @@
         ctx.strokeStyle = "rgba(45,67,49,.22)";
         ctx.strokeRect(x, y, columnW, cellH);
         ctx.fillStyle = stageIndex === stages.length - 1 ? "#4c3d7d" : "#26382d";
-        const fontSize = Math.min(15 + stageIndex * 5, Math.max(12, cellH * .42));
-        ctx.font = `${stageIndex > 2 ? 900 : 750} ${fontSize}px 'Microsoft YaHei'`;
-        ctx.fillText(fitText(ctx, byId(id).title, columnW - 12), x + columnW / 2, y + cellH / 2 + fontSize * .34);
+        const weight = stageIndex > 2 ? 900 : 750;
+        const startSize = Math.min(15 + stageIndex * 5, Math.max(10, (cellH - 4) * .42));
+        const fitted = fitCanvasTitle(ctx, byId(id).title, columnW - 10, 2, startSize, weight);
+        const visibleLines = fitted.lines.slice(0, 2);
+        const lineHeight = fitted.fontSize * 1.12;
+        const firstBaseline = y + cellH / 2 - ((visibleLines.length - 1) * lineHeight) / 2 + fitted.fontSize * .34;
+        visibleLines.forEach((line, lineIndex) => {
+          ctx.fillText(line, x + columnW / 2, firstBaseline + lineIndex * lineHeight);
+        });
       });
       x += columnW;
     });
@@ -819,7 +861,7 @@
     ctx.textAlign = "left";
     ctx.fillStyle = "#284332";
     ctx.font = "900 20px 'Microsoft YaHei'";
-    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 45, 1845);
+    ctx.fillText("把蛋岛地图漂流给下一位纯牛奶", 45, 1845);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
     ctx.fillText("选择只保存在本机 · 蛋岛环游记", 45, 1882);
@@ -848,7 +890,7 @@
     const winner = byId(state.champion);
     const file = new File([posterBlob], `蛋岛环游记-${winner.title}.png`, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
-      try { await navigator.share({ title: "蛋岛环游记", text: `我的蛋岛岛主是《${winner.title}》`, files: [file] }); }
+      try { await navigator.share({ title: "蛋岛环游记", text: `我心里的单依纯歌曲 Top 1 是《${winner.title}》`, files: [file] }); }
       catch (error) { if (error.name !== "AbortError") showToast("分享没有完成，可以先保存图片"); }
     } else {
       downloadPoster();

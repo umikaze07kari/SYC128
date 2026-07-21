@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#557c45">
-  <meta name="description" content="开启蛋岛环游记，用一场音乐探险选出你的单依纯本命歌曲。">
+  <meta name="description" content="开启蛋岛环游记，用一场音乐探险选出你心里的单依纯歌曲 Top 1。">
   <title>蛋岛环游记 · 单依纯歌曲探险</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -32,7 +32,7 @@
       <div class="island-hero">
         <div class="hero-copy">
           <p class="eyebrow">DAN ISLAND · MUSIC ODYSSEY</p>
-          <h1>沿着音乐地图，<span>寻找你的岛主。</span></h1>
+          <h1>沿着音乐地图，<span>选出心里的最爱。</span></h1>
           <p>专辑与个人单曲必带，影视原声及每档综艺都可以自由开关。</p>
 
           <section class="launch-config" aria-labelledby="rangeTitle">
@@ -48,11 +48,12 @@
           </section>
 
           <div class="hero-actions">
-            <button class="primary-button" id="startJourney" type="button">启程环游 <span>↗</span></button>
+            <button class="primary-button" id="startJourney" type="button"><span class="button-label">启程环游</span><span>↗</span></button>
             <button class="soft-button" id="continueJourney" type="button" hidden>继续上次环游</button>
           </div>
         </div>
       </div>
+      <footer class="page-credit">作者：<a href="https://www.xiaohongshu.com/search_result?keyword=%E9%A3%9E%E8%A1%8C%E5%AE%B6%E5%B0%8F%E6%B5%B7%E9%B8%A5" target="_blank" rel="noreferrer">@飞行家小海鸥</a><span>·</span>灵感：@KichunVerse</footer>
     </section>
 
     <section class="view battle-view" id="battleView">
@@ -100,9 +101,9 @@
     <section class="view result-view" id="resultView">
       <div class="winner-island">
         <img class="winner-tree" src="assets/island.svg" alt="蛋岛">
-        <p class="eyebrow">OWNER OF DAN ISLAND</p>
-        <span>你的蛋岛岛主是</span>
-        <div class="winner-cover"><img id="winnerCover" src="assets/cover-fallback.svg" alt="冠军歌曲封面"></div>
+        <p class="eyebrow">MY ONE AND ONLY</p>
+        <span>你心里的单依纯歌曲 Top 1</span>
+        <div class="winner-cover"><img id="winnerCover" src="assets/cover-fallback.svg" alt="Top 1 歌曲封面"></div>
         <h1 id="winnerTitle">—</h1>
         <p id="winnerSource">—</p>
       </div>
@@ -120,9 +121,11 @@
       </div>
 
       <aside class="invite-card">
-        <div class="invite-copy"><span>PASS THE MAP</span><b>把蛋岛地图递给下一位旅行者</b><p>在别人的结果图或页面上长按识别二维码，即可开始自己的环游。</p></div>
+        <div class="invite-copy"><span>PASS THE MAP</span><b>把蛋岛地图漂流给下一位纯牛奶</b><p>长按识别二维码，接住漂流瓶，开始自己的蛋岛环游。</p></div>
         <div class="qr-shell" id="resultQr" aria-label="蛋岛环游记测试入口二维码"></div>
+        <div class="drift-scene" aria-hidden="true"><span class="drift-bottle"><i></i></span><span class="drift-wave wave-one"></span><span class="drift-wave wave-two"></span></div>
       </aside>
+      <footer class="page-credit result-credit">作者：<a href="https://www.xiaohongshu.com/search_result?keyword=%E9%A3%9E%E8%A1%8C%E5%AE%B6%E5%B0%8F%E6%B5%B7%E9%B8%A5" target="_blank" rel="noreferrer">@飞行家小海鸥</a><span>·</span>灵感：@KichunVerse</footer>
     </section>
   </main>
 
@@ -136,7 +139,7 @@
       <li><b>种子分散：</b>专辑曲轻量加权，同专辑与高种子尽量拆组，组序随机打散。</li>
       <li><b>潮汐复活：</b>海选人数不足时，从遗珠中补足三十二强；人数超出时进行最后席位加赛。</li>
       <li><b>双歌对决：</b>三十二强依次缩减为十六强、八强、四强和二强。</li>
-      <li><b>岛主决选：</b>最后一次二选一。</li>
+      <li><b>挚爱决选：</b>最后一次二选一，选出你心里的 Top 1。</li>
     </ol>
     <p>“都不熟悉”只在第一阶段出现；它不会随机替你选歌，复活名额会自动增加。</p>
     <button class="primary-button wide" data-close-about type="button">知道了</button>
