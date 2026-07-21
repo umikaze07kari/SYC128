@@ -215,6 +215,22 @@ const MOOD_CUES = {
   经典: ["熟悉旋律被唱出新质感", "把旧故事重新交给此刻"]
 };
 
+// 同一档音综共用一个本地封面 URL，浏览器只需解码和缓存一张图。
+// 专辑曲和单曲仍保留各自封面，避免覆盖先行版、单曲版等差异。
+const PROGRAM_COVER_IDS = {
+  "综艺《歌手2025》": "li-bai-live",
+  "综艺《2020中国好声音》": "xiang-feng-yi-yang",
+  "综艺《天赐的声音》": "xia-yu-tian",
+  "综艺《为歌而赞》": "soap",
+  "综艺《说唱听我的》": "kuai-le-shi-yong-shou-ce",
+  "综艺《爆裂舞台》": "rnb-all-night",
+  "综艺《我们的歌》": "fu-er-mo-si",
+  "综艺《声生不息·港乐季》": "ai-yu-tong-de-bian-yuan",
+  "综艺《剧好听的歌》": "rang-ta-jiang-luo",
+  "综艺《音乐缘计划》": "let-me-go",
+  "综艺《国乐无双》": "gan-lan-shu"
+};
+
 window.SONG_CATALOG = rawSongs.map((row, index) => {
   const [id, title, source, vocal, mood, release, seedScore] = row;
   const color = SOURCE_META[source]?.colors || SOURCE_META.other.colors;
@@ -229,7 +245,7 @@ window.SONG_CATALOG = rawSongs.map((row, index) => {
     mood,
     release,
     seedScore,
-    cover: `assets/covers/${id}.jpg`,
+    cover: `assets/covers/${PROGRAM_COVER_IDS[release] || id}.jpg`,
     lyricExcerpt,
     cardTextKind: lyricExcerpt ? "歌词短摘" : "听感提示",
     cardLines: lyricExcerpt ? [lyricExcerpt] : (MOOD_CUES[mood] || ["把注意力交给旋律", "听见属于它的独特颜色"]),

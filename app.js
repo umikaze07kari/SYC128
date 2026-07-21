@@ -2,7 +2,8 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v9";
+  const STORAGE_KEY = "dan-island-odyssey-v10";
+  const LEGACY_STORAGE_KEY = "dan-island-odyssey-v9";
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
   const OPTIONAL_COLLECTIONS = [
@@ -169,6 +170,15 @@
     els.selectedSongCount.textContent = `${count} 首`;
   }
 
+  function firstRoundSpeed(id) {
+    const value = state?.landingChoiceMs?.[id];
+    return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+  }
+
+  function orderPairByFirstRoundSpeed(pair) {
+    return [...pair].sort((left, right) => firstRoundSpeed(left) - firstRoundSpeed(right));
+  }
+
   function makeDuelPairs(ids) {
     const ranked = ids.map(byId).sort((a, b) => b.seedScore - a.seedScore);
     const upper = ranked.splice(0, ranked.length / 2);
@@ -179,14 +189,15 @@
         if (similarity(seed, candidate) > similarity(seed, lower[bestIndex])) bestIndex = index;
       });
       const opponent = lower.splice(bestIndex, 1)[0];
-      return shuffled([seed.id, opponent.id]);
+      // 首轮用时只控制同一对阵中的上下位置，不参与配对。
+      return orderPairByFirstRoundSpeed([seed.id, opponent.id]);
     });
   }
 
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 9,
+      version: 10,
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -196,6 +207,8 @@
       groups,
       groupIndex: 0,
       groupWinners: [],
+      landingChoiceMs: {},
+      landingGroupStartedAt: null,
       eliminated: [],
       duelPairs: [],
       duelIndex: 0,
@@ -221,8 +234,12 @@
 
   function load() {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return saved?.version === 9 ? saved : null;
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
+      if (saved?.version === 10) return saved;
+      if (saved?.version === 9) {
+        return { ...saved, version: 10, landingChoiceMs: {}, landingGroupStartedAt: null };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -231,6 +248,7 @@
   function clear() {
     state = null;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
     updateContinue();
   }
 
@@ -298,6 +316,10 @@
     els.choiceTitle.textContent = "哪一首值得先登岛？";
     els.choiceGrid.className = "choice-grid four-up";
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
+    if (!Number.isFinite(state.landingGroupStartedAt)) {
+      state.landingGroupStartedAt = Date.now();
+      save();
+    }
     els.unfamiliarAction.hidden = false;
     els.matchNote.hidden = false;
     updateUndo();
@@ -307,7 +329,11 @@
   function chooseLanding(winnerId) {
     pushHistory();
     const group = state.groups[state.groupIndex];
-    if (winnerId) state.groupWinners.push(winnerId);
+    if (winnerId) {
+      state.groupWinners.push(winnerId);
+      state.landingChoiceMs[winnerId] = Math.max(0, Date.now() - (state.landingGroupStartedAt || Date.now()));
+    }
+    state.landingGroupStartedAt = null;
     group.forEach((id) => { if (id !== winnerId) state.eliminated.push(id); });
     state.groupIndex += 1;
     if (state.groupIndex < state.groups.length) {
@@ -619,8 +645,8 @@
   async function drawPoster() {
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
-    const W = 1200;
-    const H = 1750;
+    const W = 900;
+    const H = 1950;
     canvas.width = W;
     canvas.height = H;
     const winner = byId(state.champion);
@@ -635,113 +661,103 @@
 
     ctx.fillStyle = "#466f45";
     ctx.font = "900 21px Arial";
-    ctx.fillText("蛋岛环游记 · DAN ISLAND ODYSSEY", 60, 70);
+    ctx.fillText("蛋岛环游记 · DAN ISLAND ODYSSEY", 45, 48);
     ctx.fillStyle = "#708074";
     ctx.font = "18px 'Microsoft YaHei'";
-    ctx.fillText("蛋岛环游记 / 我的唯一岛主", 60, 105);
+    ctx.fillText("蛋岛环游记 / 我的唯一岛主", 45, 78);
 
-    const hero = ctx.createLinearGradient(60, 130, 1140, 475);
+    const hero = ctx.createLinearGradient(45, 100, 855, 310);
     hero.addColorStop(0, "#284332");
     hero.addColorStop(.6, "#557c45");
     hero.addColorStop(1, "#665394");
-    roundRect(ctx, 60, 130, 1080, 345, 42);
+    roundRect(ctx, 45, 100, 810, 210, 28);
     ctx.fillStyle = hero;
     ctx.fill();
     if (island) {
-      ctx.save(); ctx.globalAlpha = .2; ctx.drawImage(island, 730, 105, 430, 370); ctx.restore();
+      ctx.save(); ctx.globalAlpha = .2; ctx.drawImage(island, 600, 75, 280, 250); ctx.restore();
     }
     ctx.fillStyle = "#f4ef99";
     ctx.font = "900 17px Arial";
-    ctx.fillText("OWNER OF DAN ISLAND", 115, 190);
+    ctx.fillText("OWNER OF DAN ISLAND", 82, 142);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "22px 'Microsoft YaHei'";
-    ctx.fillText("我的蛋岛岛主是", 115, 238);
+    ctx.fillText("我的蛋岛岛主是", 82, 178);
     ctx.fillStyle = "#fff";
-    ctx.font = "900 62px 'Microsoft YaHei'";
-    ctx.fillText(fitText(ctx, winner.title, 600), 115, 325);
+    ctx.font = "900 50px 'Microsoft YaHei'";
+    ctx.fillText(fitText(ctx, winner.title, 520), 82, 235);
     ctx.fillStyle = "rgba(255,255,255,.7)";
     ctx.font = "20px 'Microsoft YaHei'";
-    ctx.fillText(fitText(ctx, winner.release, 600), 118, 375);
+    ctx.fillText(fitText(ctx, winner.release, 520), 84, 275);
     if (cover) {
       ctx.save();
-      roundRect(ctx, 865, 178, 205, 205, 35);
+      roundRect(ctx, 690, 132, 145, 145, 24);
       ctx.clip();
-      ctx.drawImage(cover, 865, 178, 205, 205);
+      ctx.drawImage(cover, 690, 132, 145, 145);
       ctx.restore();
     }
 
     ctx.fillStyle = "#284332";
     ctx.font = "900 30px 'Microsoft YaHei'";
-    ctx.fillText("完整二选一轨迹", 60, 525);
+    ctx.fillText("完整晋级轨迹", 45, 352);
     ctx.fillStyle = "#708074";
-    ctx.font = "17px 'Microsoft YaHei'";
-    ctx.fillText("每格记录对阵双方与晋级者 · 五强经岛主议会选出决赛席位", 330, 524);
+    ctx.font = "14px 'Microsoft YaHei'";
+    ctx.fillText("格高与字号逐轮递增 · 五强经岛主议会选出决赛席位", 255, 351);
 
-    const rounds = state.bracketRounds;
-    const boardX = 60;
-    const boardY = 565;
-    const boardW = 1080;
-    const boardH = 920;
-    const headerH = 46;
-    const columnGap = 12;
-    const columnW = (boardW - columnGap * Math.max(0, rounds.length - 1)) / Math.max(1, rounds.length);
-    const colors = ["#e4f4b8", "#cceec0", "#d6d0f4", "#f4ef99"];
-    rounds.forEach((round, roundIndex) => {
-      const x = boardX + roundIndex * (columnW + columnGap);
-      ctx.fillStyle = colors[roundIndex] || "#ece8fb";
+    const stages = [
+      state.top40?.length ? { label: "40强", ids: state.top40 } : { label: "20强", ids: state.top20 },
+      state.top40?.length ? { label: "20强", ids: state.top20 } : { label: "10强", ids: state.top10 },
+      state.top40?.length ? { label: "10强", ids: state.top10 } : { label: "5强", ids: state.top5 },
+      ...(state.top40?.length ? [{ label: "5强", ids: state.top5 }] : []),
+      { label: "2强", ids: state.finalists },
+      { label: "冠军", ids: [state.champion] }
+    ].filter((stage) => stage.ids?.length);
+    const boardX = 45;
+    const boardY = 375;
+    const boardW = 810;
+    const boardH = 1415;
+    const headerH = 42;
+    const widthWeights = stages.map((_, index) => .82 + index * .13);
+    const weightTotal = widthWeights.reduce((sum, value) => sum + value, 0);
+    const colors = ["#f4ef99", "#9ddfe0", "#bdebc3", "#ffd3ad", "#acd1f3", "#efafd5"];
+    let x = boardX;
+    stages.forEach((stage, stageIndex) => {
+      const columnW = stageIndex === stages.length - 1
+        ? boardX + boardW - x
+        : boardW * widthWeights[stageIndex] / weightTotal;
+      ctx.fillStyle = colors[stageIndex] || "#ece8fb";
       ctx.fillRect(x, boardY, columnW, headerH);
       ctx.strokeStyle = "rgba(45,67,49,.22)";
       ctx.strokeRect(x, boardY, columnW, headerH);
       ctx.fillStyle = "#213025";
       ctx.textAlign = "center";
-      ctx.font = "900 15px 'Microsoft YaHei'";
-      ctx.fillText(round.label, x + columnW / 2, boardY + 29);
+      ctx.font = `900 ${14 + stageIndex}px 'Microsoft YaHei'`;
+      ctx.fillText(stage.label, x + columnW / 2, boardY + 27);
 
-      const gap = round.matches.length > 12 ? 2 : 5;
-      const availableH = boardH - headerH - 12;
-      const maxMatchH = round.phase === "final" ? 116 : (round.matches.length <= 5 ? 92 : 72);
-      const matchH = Math.min(maxMatchH, (availableH - gap * Math.max(0, round.matches.length - 1)) / Math.max(1, round.matches.length));
-      const usedH = round.matches.length * matchH + Math.max(0, round.matches.length - 1) * gap;
-      const startY = boardY + headerH + 6 + (availableH - usedH) / 2;
-      round.matches.forEach((match, matchIndex) => {
-        const y = startY + matchIndex * (matchH + gap);
-        const [leftId, rightId] = match.songs;
-        const left = byId(leftId);
-        const right = byId(rightId);
-        const advanced = byId(match.winner);
-        ctx.fillStyle = "rgba(255,255,255,.88)";
-        ctx.fillRect(x, y, columnW, matchH);
-        ctx.strokeStyle = "rgba(45,67,49,.16)";
-        ctx.strokeRect(x, y, columnW, matchH);
-        const compact = matchH < 50;
-        const pairSize = compact ? 10 : 13;
-        const resultSize = compact ? 11 : 16;
-        ctx.fillStyle = "#68716a";
-        ctx.font = `750 ${pairSize}px 'Microsoft YaHei'`;
-        const half = (columnW - 34) / 2;
-        ctx.fillText(fitText(ctx, left.title, half), x + half / 2 + 6, y + matchH * .35);
-        ctx.fillStyle = "#8d80ba";
-        ctx.font = `900 ${compact ? 8 : 10}px Arial`;
-        ctx.fillText("VS", x + columnW / 2, y + matchH * .35);
-        ctx.fillStyle = "#68716a";
-        ctx.font = `750 ${pairSize}px 'Microsoft YaHei'`;
-        ctx.fillText(fitText(ctx, right.title, half), x + columnW - half / 2 - 6, y + matchH * .35);
-        ctx.fillStyle = "#e6f1d5";
-        ctx.fillRect(x + 1, y + matchH * .52, columnW - 2, matchH * .48 - 1);
-        ctx.fillStyle = "#3f593f";
-        ctx.font = `900 ${resultSize}px 'Microsoft YaHei'`;
-        ctx.fillText(`✓ ${fitText(ctx, advanced.title, columnW - 28)}`, x + columnW / 2, y + matchH * .84);
+      const contentY = boardY + headerH;
+      const contentH = boardH - headerH;
+      const cellH = contentH / stage.ids.length;
+      stage.ids.forEach((id, itemIndex) => {
+        const y = contentY + itemIndex * cellH;
+        ctx.fillStyle = itemIndex % 2 ? "rgba(249,250,247,.94)" : "rgba(255,255,255,.96)";
+        ctx.fillRect(x, y, columnW, cellH);
+        ctx.strokeStyle = "rgba(45,67,49,.22)";
+        ctx.strokeRect(x, y, columnW, cellH);
+        ctx.fillStyle = stageIndex === stages.length - 1 ? "#4c3d7d" : "#26382d";
+        const fontSize = Math.min(15 + stageIndex * 5, Math.max(12, cellH * .42));
+        ctx.font = `${stageIndex > 2 ? 900 : 750} ${fontSize}px 'Microsoft YaHei'`;
+        ctx.fillText(fitText(ctx, byId(id).title, columnW - 12), x + columnW / 2, y + cellH / 2 + fontSize * .34);
       });
+      x += columnW;
     });
-    drawQrCode(ctx, createJourneyQr(), 950, 1520, 165);
+    drawQrCode(ctx, createJourneyQr(), 748, 1810, 105);
     ctx.textAlign = "left";
     ctx.fillStyle = "#284332";
     ctx.font = "900 20px 'Microsoft YaHei'";
-    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 60, 1565);
+    ctx.fillText("长按识别二维码，开始你的蛋岛环游", 45, 1845);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
-    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 60, 1604);
-    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 60, 1640);
+    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 45, 1882);
+    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 45, 1918);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
   }

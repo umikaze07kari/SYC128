@@ -80,7 +80,7 @@
 
       <div class="choice-grid four-up" id="choiceGrid"></div>
       <button class="unfamiliar-action" id="unfamiliarAction" type="button"><span>?</span> 这一组都不熟悉</button>
-      <p class="match-note" id="matchNote">只有登岛海选可以跳过整组，之后不会再出现此按钮。</p>
+      <p class="match-note" id="matchNote">本轮选择越快，后续二选一同组时位置越靠上；速度不影响分组。</p>
     </section>
 
     <section class="view selection-view" id="selectionView">
@@ -142,7 +142,7 @@
     <h2>六处地标，一场蛋岛环游</h2>
     <ol>
       <li><b>出发配置：</b>专辑曲与个人单曲固定收录，OST 和每档综艺可以分别开关。</li>
-      <li><b>登岛海选：</b>根据本次曲目数量自动编成若干组四选一。</li>
+      <li><b>登岛海选：</b>根据本次曲目数量自动编成若干组四选一；选择用时只影响后续同组内的上下位置。</li>
       <li><b>种子分散：</b>专辑曲轻量加权，同专辑与高种子尽量拆组，组序随机打散。</li>
       <li><b>潮汐复活：</b>按曲库规模补足二十强或四十强。</li>
       <li><b>双歌对决：</b>沿地图逐站减半，直到五强抵达岛心。</li>
@@ -157,7 +157,7 @@
     <button class="modal-close" data-close-poster type="button">×</button>
     <p class="eyebrow">ISLAND POSTER</p>
     <h2>你的蛋岛环游长图</h2>
-    <div class="poster-wrap"><canvas id="resultCanvas" width="1200" height="1750"></canvas></div>
+    <div class="poster-wrap"><canvas id="resultCanvas" width="900" height="1950"></canvas></div>
     <div class="poster-actions"><button class="primary-button" id="downloadPoster" type="button">保存 PNG</button><button class="soft-button" id="sharePoster" type="button">分享</button></div>
   </dialog>
 
