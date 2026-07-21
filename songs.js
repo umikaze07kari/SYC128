@@ -29,7 +29,6 @@ const rawSongs = [
 
   // 音乐综艺《歌手2025》（珠玉、有趣的节目版本已按要求移除）
   ["li-bai-live", "李白", "variety", "solo", "摇滚", "综艺《歌手2025》", 93],
-  ["jun-live", "君", "variety", "solo", "国风", "综艺《歌手2025》", 84],
   ["luo-ye-gui-gen-live", "落叶归根", "variety", "solo", "抒情", "综艺《歌手2025》", 81],
   ["tian-kong-live", "天空", "variety", "solo", "大气", "综艺《歌手2025》", 76],
   ["kai-shi-dong-le-live", "开始懂了", "variety", "solo", "抒情", "综艺《歌手2025》", 73],
@@ -80,6 +79,7 @@ const rawSongs = [
   ["qi-guan", "奇观", "single", "solo", "大气", "个人数字单曲", 61],
   ["liang-zai-ri-ji", "靓仔日记", "single", "solo", "轻快", "个人数字单曲", 58],
   ["guang-bo", "光波", "single", "solo", "律动", "巡演主题数字单曲", 57],
+  ["jun-live", "君", "single", "solo", "国风", "个人数字单曲", 84],
 
   // 独唱作品（《如星》已在 OST 分类中收录，不重复添加）
   ["yong-bu-shi-lian-de-ai", "永不失联的爱（正式版）", "single", "solo", "抒情", "个人单曲", 97],
@@ -188,10 +188,10 @@ const SOURCE_META = {
 // 人工歌词配置区：每首歌最终都会获得 lyricExcerpt 字段。
 // “【待补充高光歌词】”是逐曲占位符，后续直接按歌曲 id 替换即可。
 const HIGHLIGHT_LYRICS = {
-  "yu-hou-ri-ji": "【待补充高光歌词】",
-  "yong-gan-e-du": "【待补充高光歌词】",
+  "yu-hou-ri-ji": "Everything feels like a movie 围绕我们的对手戏",
+  "yong-gan-e-du": "我逐字逐句怯懦 把勇敢一丝一缕消磨",
   "kong-er": "也许你是我哄我的谎 好借你想起我还有遗憾",
-  "ling-yi-zhong-da-an": "【待补充高光歌词】",
+  "ling-yi-zhong-da-an": "我穿过汹涌的人海 我穿过云层里的山脉",
   "tell-me": "【待补充高光歌词】",
   "ni-ming-xing": "【待补充高光歌词】",
   "shi-jiao": "【待补充高光歌词】",

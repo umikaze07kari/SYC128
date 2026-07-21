@@ -5,6 +5,7 @@
   const STORAGE_KEY = "dan-island-odyssey-v12";
   const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
+  const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
   const LANDING_GROUP_SIZE = 4;
   const BASE_LANDING_QUALIFIERS = 24;
   const MAX_REVIVAL_SLOTS = 5;
@@ -12,13 +13,13 @@
   const OPTIONAL_COLLECTIONS = [
     { key: "ost", group: "ost", label: "影视原声", match: (song) => song.source === "ost" },
     { key: "voice2020", group: "classic", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
-    { key: "giftedVoice", group: "classic", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
-    { key: "praiseSong", group: "classic", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
-    { key: "rapListen", group: "classic", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
+    { key: "singer2025", group: "classic", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
     { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
-    { key: "ourSong", group: "classic", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
     { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
-    { key: "singer2025", group: "other", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
+    { key: "giftedVoice", group: "other", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
+    { key: "praiseSong", group: "other", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
+    { key: "rapListen", group: "other", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
+    { key: "ourSong", group: "other", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
     { key: "dramaSongs", group: "other", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
     { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
     { key: "chinaMusic", group: "other", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
@@ -28,7 +29,7 @@
     { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
     { key: "other", title: "其他音乐综艺", note: "更多现场" }
   ];
-  const DEFAULT_COLLECTIONS = ["ost", "singer2025", "voice2020"];
+  const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound"];
   const ROUND_LABELS = {
     duel32: "三十二进十六",
     duel16: "十六进八",
@@ -60,7 +61,8 @@
     selectionCount: $("#selectionCount"),
     selectionNeed: $("#selectionNeed"),
     confirmSelection: $("#confirmSelection"),
-    checkpointRoute: $("#checkpointRoute"),
+    checkpointSky: $("#checkpointSky"),
+    checkpointBubbles: $("#checkpointBubbles"),
     checkpointUndo: $("#checkpointUndo"),
     finalRoute: $("#finalRoute"),
     aboutDialog: $("#aboutDialog"),
@@ -296,12 +298,15 @@
     return escaped.replace(/\\n|\r?\n/g, "<br>");
   }
 
-  function choiceCard(song) {
+  function choiceCard(song, cardIndex = 0) {
     const lyric = shortLine(song);
+    const charmKinds = ["note", "heart", "bubble", "flora"];
+    const charmKind = charmKinds[cardIndex % charmKinds.length];
     return `
       <button class="cover-choice source-${song.source}${lyric ? "" : " no-lyric"}" type="button" data-song-id="${song.id}">
         <div class="cover-frame">${imageMarkup(song)}<em>${song.sourceLabel}${song.vocal === "collab" ? " · 合唱" : ""}</em></div>
         <div class="choice-info">
+          <span class="card-charms charm-${charmKind}" aria-hidden="true"><i></i><i></i><i></i></span>
           <h3><span>${song.title}</span></h3>
           <small>${song.release}</small>
           ${lyric ? `<div class="mini-lyric">${lyricMarkup(lyric)}</div>` : ""}
@@ -439,7 +444,7 @@
     els.choiceHint.textContent = isFinal ? "最后一次，只听自己的偏爱" : "这一轮不再设跳过";
     els.choiceTitle.textContent = isFinal ? "哪一首是你心里的 Top 1？" : "这一组，谁继续向岛心前进？";
     els.choiceGrid.className = "choice-grid duel";
-    els.choiceGrid.innerHTML = `${choiceCard(pair[0])}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1])}`;
+    els.choiceGrid.innerHTML = `${choiceCard(pair[0], 0)}<span class="duel-versus" aria-hidden="true">VS</span>${choiceCard(pair[1], 1)}`;
     els.unfamiliarAction.hidden = true;
     els.matchNote.hidden = true;
     updateUndo();
@@ -465,26 +470,26 @@
       state.duelPairs = makeDuelPairs(state.top16);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("十六座音乐岛已经亮起", "下一站十六进八，偏爱继续收紧。", "duel16", true);
+      setCheckpoint("接下来，十六进八", "成功晋级的十六首歌正在浮向下一站。", "duel16", true);
     } else if (state.phase === "duel16") {
       state.top8 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top8);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("八座内岛已经升起", "接下来八进四，选择会变得更难。", "duel8", true);
+      setCheckpoint("接下来，八进四", "八首歌继续前进，选择会变得更难。", "duel8", true);
     } else if (state.phase === "duel8") {
       state.top4 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top4);
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("四首歌抵达岛心", "下一站四进二，决赛席位即将揭晓。", "duel4", true);
+      setCheckpoint("接下来，四进二", "四首歌已经抵达岛心，决赛席位即将揭晓。", "duel4", true);
     } else if (state.phase === "duel4") {
       state.top2 = [...state.duelWinners];
       state.finalists = [...state.top2];
       state.duelPairs = [[...state.top2]];
       state.duelIndex = 0;
       state.duelWinners = [];
-      setCheckpoint("两首歌来到最终海岸", "最后一次二选一，选出你心里的单曲 Top 1。", "final", true);
+      setCheckpoint("接下来，挚爱决选", "两首歌来到最终海岸，最后一次只听自己的偏爱。", "final", true);
     } else {
       state.champion = winnerId;
       state.phase = "complete";
@@ -566,8 +571,8 @@
     state.duelIndex = 0;
     state.duelWinners = [];
     setCheckpoint(
-      `${state.firstStageTarget} 首歌进入环岛航线`,
-      "海选与复活完成，下一站开始双歌对决。",
+      "接下来，开始双歌对决",
+      `${state.firstStageTarget} 首歌成功晋级，正在浮向环岛航线。`,
       "duel32"
     );
   }
@@ -632,9 +637,22 @@
     $("#checkpointTitle").textContent = state.checkpoint.title;
     $("#checkpointCopy").textContent = state.checkpoint.copy;
     els.checkpointUndo.hidden = !state.checkpoint.undoable;
-    $("#checkpointRouteTitle").textContent = "完整晋级轨迹";
-    $("#checkpointRouteHint").textContent = "尚未产生的轮次暂时留空";
-    renderTrajectory(els.checkpointRoute);
+    const qualifiedByPhase = {
+      duel32: state.top32,
+      duel16: state.top16,
+      duel8: state.top8,
+      duel4: state.top4,
+      final: state.top2
+    };
+    const qualified = (qualifiedByPhase[state.checkpoint.nextPhase] || []).map(byId).filter(Boolean);
+    els.checkpointBubbles.innerHTML = qualified.map((song, index) => {
+      const lane = (index * 37 + 11) % 94;
+      const size = Math.max(64, Math.min(112, 116 - [...song.title].length * 3));
+      const duration = 8 + (index % 6) * 1.15;
+      const delay = -((index * 1.73) % duration);
+      const drift = (index % 2 ? 1 : -1) * (18 + (index % 5) * 8);
+      return `<span class="advance-bubble source-${song.source}" style="--x:${lane}%;--size:${size}px;--duration:${duration}s;--delay:${delay}s;--drift:${drift}px"><b>${song.title}</b></span>`;
+    }).join("");
     showView("checkpoint");
   }
 
@@ -727,10 +745,7 @@
   }
 
   function journeyUrl() {
-    const url = new URL(location.href);
-    url.search = "";
-    url.hash = "";
-    return url.href;
+    return JOURNEY_URL;
   }
 
   function createJourneyQr() {
@@ -744,7 +759,7 @@
   function renderQrCode() {
     const code = createJourneyQr();
     els.resultQr.innerHTML = code
-      ? code.createSvgTag({ cellSize: 4, margin: 2, scalable: true })
+      ? code.createImgTag(5, 10, "蛋岛环游记测试页面二维码")
       : '<span class="qr-fallback">二维码生成失败<br>请复制测试链接</span>';
   }
 
@@ -1026,7 +1041,13 @@
       if (button) toggleSelection(button.dataset.selectId);
     });
     els.confirmSelection.addEventListener("click", confirmSelection);
-    $("#continueStage").addEventListener("click", continueStage);
+    els.checkpointSky.addEventListener("click", continueStage);
+    els.checkpointSky.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        continueStage();
+      }
+    });
     $("#restartJourney").addEventListener("click", () => {
       const config = state.config;
       clear();
