@@ -2,10 +2,13 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v11";
-  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v10", "dan-island-odyssey-v9"];
+  const STORAGE_KEY = "dan-island-odyssey-v12";
+  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const LANDING_GROUP_SIZE = 4;
+  const BASE_LANDING_QUALIFIERS = 24;
+  const MAX_REVIVAL_SLOTS = 5;
+  const MIN_LANDING_QUALIFIERS = 32 - MAX_REVIVAL_SLOTS;
   const OPTIONAL_COLLECTIONS = [
     { key: "ost", label: "影视原声", match: (song) => song.source === "ost" },
     { key: "singer2025", label: "歌手2025", match: (song) => song.source === "live" },
@@ -115,7 +118,7 @@
     const ranked = [...pool].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
     let directCount = 0;
     while (directCount < Math.min(32, pool.length)
-      && directCount + Math.ceil((pool.length - directCount) / LANDING_GROUP_SIZE) < 24) directCount += 1;
+      && directCount + Math.ceil((pool.length - directCount) / LANDING_GROUP_SIZE) < BASE_LANDING_QUALIFIERS) directCount += 1;
     const directSeeds = ranked.splice(0, directCount);
     const groupCount = Math.ceil(ranked.length / LANDING_GROUP_SIZE);
     const seeds = ranked.splice(0, groupCount);
@@ -198,7 +201,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 11,
+      version: 12,
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
@@ -206,6 +209,8 @@
       phase: "landing",
       directSeeds,
       groups,
+      initialGroupCount: groups.length,
+      supplementScheduled: false,
       groupIndex: 0,
       groupWinners: [],
       landingTiebreak: [],
@@ -239,7 +244,7 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
       const saved = JSON.parse(raw);
-      if (saved?.version === 11) return saved;
+      if (saved?.version === 12) return saved;
       return null;
     } catch {
       return null;
@@ -310,21 +315,22 @@
 
   function renderLanding() {
     const tiebreak = state.phase === "landingTiebreak";
+    const supplement = !tiebreak && state.supplementScheduled && state.groupIndex >= state.initialGroupCount;
     const ids = tiebreak ? state.landingTiebreak : state.groups[state.groupIndex];
     const group = ids.map(byId);
-    els.stageEnglish.textContent = tiebreak ? "TOP 32 PLAY-IN" : "LANDING ROUND";
-    els.stageTitle.textContent = tiebreak ? `三十二强加赛 · ${ids.length}选一` : `登岛海选 · ${ids.length}选一`;
+    els.stageEnglish.textContent = tiebreak ? "TOP 32 PLAY-IN" : supplement ? "SECOND CHANCE PLAY-IN" : "LANDING ROUND";
+    els.stageTitle.textContent = tiebreak ? `三十二强加赛 · ${ids.length}选一` : supplement ? `遗珠加赛 · ${ids.length}选一` : `登岛海选 · ${ids.length}选一`;
     els.stageCounter.textContent = tiebreak ? "最后一组" : `${state.groupIndex + 1} / ${state.groups.length}`;
     els.roundProgress.style.width = tiebreak ? "100%" : `${(state.groupIndex / state.groups.length) * 100}%`;
-    els.choiceHint.textContent = tiebreak ? "最后一个三十二强席位" : "从这组里留下唯一一首";
-    els.choiceTitle.textContent = tiebreak ? "谁来拿到最后一张通行票？" : "哪一首值得先登岛？";
+    els.choiceHint.textContent = tiebreak ? "最后一个三十二强席位" : supplement ? "用加赛减少需要手动送回的遗珠" : "从这组里留下唯一一首";
+    els.choiceTitle.textContent = tiebreak ? "谁来拿到最后一张通行票？" : supplement ? "这一组，谁值得重新登岛？" : "哪一首值得先登岛？";
     els.choiceGrid.className = "choice-grid four-up";
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
     if (!Number.isFinite(state.landingGroupStartedAt)) {
       state.landingGroupStartedAt = Date.now();
       save();
     }
-    els.unfamiliarAction.hidden = tiebreak;
+    els.unfamiliarAction.hidden = tiebreak || supplement;
     els.matchNote.hidden = false;
     updateUndo();
     showView("battle");
@@ -346,6 +352,19 @@
       return;
     }
     const landing = [...state.directSeeds, ...state.groupWinners];
+    if (landing.length < MIN_LANDING_QUALIFIERS && !state.supplementScheduled) {
+      const slotCount = MIN_LANDING_QUALIFIERS - landing.length;
+      const candidates = shuffled(state.eliminated).slice(0, slotCount * LANDING_GROUP_SIZE);
+      const candidateSet = new Set(candidates);
+      const supplementGroups = Array.from({ length: slotCount }, () => []);
+      candidates.forEach((id, index) => supplementGroups[index % slotCount].push(id));
+      state.eliminated = state.eliminated.filter((id) => !candidateSet.has(id));
+      state.groups.push(...supplementGroups.filter((group) => group.length));
+      state.supplementScheduled = true;
+      save();
+      renderLanding();
+      return;
+    }
     if (landing.length > state.firstStageTarget) {
       const playoffSize = landing.length - state.firstStageTarget + 1;
       state.landingTiebreak = shuffled(landing).slice(0, playoffSize);
@@ -460,7 +479,18 @@
   }
 
   function selectionLimit() {
-    return state.revivalSlots;
+    return Math.min(MAX_REVIVAL_SLOTS, state.revivalSlots);
+  }
+
+  function groupedSelectionCandidates() {
+    const sourceOrder = ["album", "single", "ost", "live", "variety", "other"];
+    const grouped = selectionCandidates().reduce((result, song) => {
+      (result[song.source] ||= []).push(song);
+      return result;
+    }, {});
+    return sourceOrder
+      .filter((source) => grouped[source]?.length)
+      .map((source) => ({ source, label: grouped[source][0].sourceLabel, songs: grouped[source] }));
   }
 
   function renderSelection() {
@@ -471,11 +501,17 @@
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
-    els.selectionGrid.className = "selection-grid compact-grid";
-    els.selectionGrid.innerHTML = selectionCandidates().map((song) => `
-      <button class="select-card compact source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}" title="${song.title}">
-        <span aria-hidden="true">+</span><b>${song.title}</b>
-      </button>`).join("");
+    els.selectionGrid.className = "selection-groups";
+    els.selectionGrid.innerHTML = groupedSelectionCandidates().map((group) => `
+      <section class="selection-group source-${group.source}">
+        <div class="selection-group-head"><b>${group.label}</b><span>${group.songs.length} 首</span></div>
+        <div class="selection-group-grid">
+          ${group.songs.map((song) => `
+            <button class="select-card compact source-${song.source} ${state.selection.includes(song.id) ? "selected" : ""}" type="button" data-select-id="${song.id}" title="${song.title}">
+              <span aria-hidden="true">+</span><b>${song.title}</b>
+            </button>`).join("")}
+        </div>
+      </section>`).join("");
     showView("selection");
   }
 
