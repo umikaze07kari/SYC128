@@ -10,18 +10,23 @@
   const MAX_REVIVAL_SLOTS = 5;
   const MIN_LANDING_QUALIFIERS = 32 - MAX_REVIVAL_SLOTS;
   const OPTIONAL_COLLECTIONS = [
-    { key: "ost", label: "影视原声", match: (song) => song.source === "ost" },
-    { key: "singer2025", label: "歌手2025", match: (song) => song.source === "live" },
-    { key: "voice2020", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
-    { key: "giftedVoice", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
-    { key: "praiseSong", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
-    { key: "rapListen", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
-    { key: "burstStage", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
-    { key: "ourSong", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
-    { key: "infinitySound", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
-    { key: "dramaSongs", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
-    { key: "musicPlan", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
-    { key: "chinaMusic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
+    { key: "ost", group: "ost", label: "影视原声", match: (song) => song.source === "ost" },
+    { key: "voice2020", group: "classic", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
+    { key: "giftedVoice", group: "classic", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
+    { key: "praiseSong", group: "classic", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
+    { key: "rapListen", group: "classic", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
+    { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
+    { key: "ourSong", group: "classic", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
+    { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
+    { key: "singer2025", group: "other", label: "歌手2025", match: (song) => song.source === "live" },
+    { key: "dramaSongs", group: "other", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
+    { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
+    { key: "chinaMusic", group: "other", label: "国乐无双", match: (song) => song.release.includes("国乐无双") }
+  ];
+  const COLLECTION_GROUPS = [
+    { key: "ost", title: "影视原声", note: "影视歌曲" },
+    { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
+    { key: "other", title: "其他音乐综艺", note: "更多现场" }
   ];
   const DEFAULT_COLLECTIONS = ["ost", "singer2025", "voice2020"];
   const ROUND_LABELS = {
@@ -68,6 +73,7 @@
   let state = null;
   let posterBlob = null;
   let toastTimer = null;
+  let audio = null;
 
   function showToast(message) {
     $("#toast").textContent = message;
@@ -162,8 +168,14 @@
 
   function renderJourneyConfig(config = null) {
     const enabled = new Set(config?.collections || DEFAULT_COLLECTIONS);
-    els.collectionToggles.innerHTML = OPTIONAL_COLLECTIONS.map((collection) => `
-      <label class="collection-switch"><input type="checkbox" value="${collection.key}" ${enabled.has(collection.key) ? "checked" : ""}><span>${collection.label}</span></label>`).join("");
+    els.collectionToggles.innerHTML = COLLECTION_GROUPS.map((group) => {
+      const items = OPTIONAL_COLLECTIONS.filter((collection) => collection.group === group.key);
+      return `<section class="collection-group collection-group-${group.key}">
+        <div class="collection-group-head"><b>${group.title}</b><small>${group.note}</small></div>
+        <div class="collection-options">${items.map((collection) => `
+          <label class="collection-switch"><input type="checkbox" value="${collection.key}" ${enabled.has(collection.key) ? "checked" : ""}><span>${collection.label}</span></label>`).join("")}</div>
+      </section>`;
+    }).join("");
     const vocal = config?.includeCollabs === false ? "solo" : "all";
     $(`input[name="vocalScope"][value="${vocal}"]`).checked = true;
     updateSelectedCount();
@@ -522,7 +534,10 @@
     else if (state.selection.length < limit) state.selection.push(id);
     else return showToast(`这一站只能选择 ${limit} 首`);
     save();
-    renderSelection();
+    const button = els.selectionGrid.querySelector(`[data-select-id="${id}"]`);
+    button?.classList.toggle("selected", state.selection.includes(id));
+    els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
+    els.confirmSelection.disabled = state.selection.length !== limit;
   }
 
   function confirmSelection() {
@@ -841,7 +856,100 @@
     }
   }
 
+  function createAudioSystem() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    const context = new AudioContext();
+    const master = context.createGain();
+    const filter = context.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 1500;
+    master.gain.value = 0;
+    master.connect(filter).connect(context.destination);
+    const progression = [
+      [261.63, 329.63, 392, 493.88],
+      [220, 261.63, 329.63, 392],
+      [174.61, 220, 261.63, 329.63],
+      [196, 261.63, 293.66, 392]
+    ];
+    let enabled = false;
+    let timer = null;
+    let step = 0;
+    let nextNoteAt = 0;
+
+    function tone(frequency, start, duration, volume, type = "sine") {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = type;
+      oscillator.frequency.value = frequency;
+      oscillator.detune.value = type === "triangle" ? -4 : 3;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + Math.min(.16, duration * .25));
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      oscillator.connect(gain).connect(master);
+      oscillator.start(start);
+      oscillator.stop(start + duration + .05);
+    }
+
+    function schedule() {
+      while (nextNoteAt < context.currentTime + .8) {
+        const chord = progression[Math.floor(step / 8) % progression.length];
+        const note = chord[[0, 2, 1, 3, 2, 1, 0, 2][step % 8]];
+        tone(note, nextNoteAt, 1.6, .032);
+        if (step % 8 === 0) {
+          tone(chord[0] / 2, nextNoteAt, 3.7, .026, "triangle");
+          chord.slice(1).forEach((frequency, index) => tone(frequency / 2, nextNoteAt + index * .045, 3.25, .011));
+        }
+        nextNoteAt += .5;
+        step += 1;
+      }
+    }
+
+    function setEnabled(value) {
+      enabled = value;
+      context.resume();
+      master.gain.cancelScheduledValues(context.currentTime);
+      master.gain.setTargetAtTime(value ? .72 : 0.0001, context.currentTime, value ? .7 : .12);
+      if (value) {
+        nextNoteAt = Math.max(nextNoteAt, context.currentTime + .05);
+        schedule();
+        timer = timer || setInterval(schedule, 300);
+      } else if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function clickSound() {
+      if (!enabled) return;
+      const now = context.currentTime;
+      tone(660, now, .11, .07);
+      tone(880, now + .055, .14, .045, "triangle");
+    }
+
+    return { setEnabled, clickSound, get enabled() { return enabled; } };
+  }
+
+  function toggleMusic() {
+    audio = audio || createAudioSystem();
+    if (!audio) {
+      showToast("当前浏览器暂不支持网页音乐");
+      return;
+    }
+    const enabled = !audio.enabled;
+    audio.setEnabled(enabled);
+    const button = $("#musicToggle");
+    button.setAttribute("aria-pressed", String(enabled));
+    button.setAttribute("aria-label", enabled ? "关闭背景音乐和按钮音效" : "开启背景音乐和按钮音效");
+    $(".music-label", button).textContent = enabled ? "音乐开启" : "音乐关闭";
+    showToast(enabled ? "原创舒缓 BGM 已开启" : "音乐与按钮音效已关闭");
+  }
+
   function bindEvents() {
+    $("#musicToggle").addEventListener("click", toggleMusic);
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("button") && !event.target.closest("#musicToggle")) audio?.clickSound();
+    });
     $$('[data-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
     $("#startJourney").addEventListener("click", startJourney);
     els.collectionToggles.addEventListener("change", updateSelectedCount);

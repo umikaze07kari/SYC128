@@ -19,7 +19,12 @@
       <span class="brand-egg">蛋</span>
       <span><b>蛋岛环游记</b><small>DAN ISLAND ODYSSEY</small></span>
     </button>
-    <button class="round-icon" id="openAbout" type="button" aria-label="查看赛制">?</button>
+    <div class="topbar-actions">
+      <button class="music-toggle" id="musicToggle" type="button" aria-label="开启背景音乐和按钮音效" aria-pressed="false">
+        <span class="music-icon" aria-hidden="true">♪</span><span class="music-label">音乐关闭</span>
+      </button>
+      <button class="round-icon" id="openAbout" type="button" aria-label="查看赛制">?</button>
+    </div>
   </header>
 
   <main>
@@ -38,7 +43,7 @@
               <label><input type="radio" name="vocalScope" value="solo"><span>仅保留独唱</span></label>
               <label><input type="radio" name="vocalScope" value="all" checked><span>包含合唱</span></label>
             </fieldset>
-            <div class="config-subhead"><b>影视与音乐综艺</b><span>默认开启 3 项</span></div>
+            <div class="config-subhead"><b>影视与音乐综艺</b><span>每档节目都可单独选择</span></div>
             <div class="collection-toggles" id="collectionToggles"></div>
           </section>
 
@@ -47,21 +52,6 @@
             <button class="soft-button" id="continueJourney" type="button" hidden>继续上次环游</button>
           </div>
         </div>
-        <div class="island-art">
-          <img src="assets/island.svg" alt="长着巨树的绿色蛋岛">
-          <span class="island-note note-one">140 首曲库</span>
-          <span class="island-note note-two">四选一加速</span>
-        </div>
-      </div>
-
-      <div class="expedition-map" aria-label="蛋岛六处探险地标">
-        <svg viewBox="0 0 600 170" preserveAspectRatio="none" aria-hidden="true"><path d="M28 116 C92 116 92 48 151 48 S214 124 273 120 S334 43 393 48 S455 126 513 112 S555 52 577 48"/></svg>
-        <div class="map-stop stop-1"><i>⛵</i><b>启航湾</b><small>海选复活</small></div>
-        <div class="map-stop stop-2"><i>🌊</i><b>潮汐滩</b><small>三十二进十六</small></div>
-        <div class="map-stop stop-3"><i>🪨</i><b>回声礁</b><small>十六进八</small></div>
-        <div class="map-stop stop-4"><i>🌲</i><b>萤光林</b><small>八进四</small></div>
-        <div class="map-stop stop-5"><i>⛺</i><b>岛心营地</b><small>四进二</small></div>
-        <div class="map-stop stop-6"><i>🥚</i><b>岛主峰</b><small>最终决选</small></div>
       </div>
     </section>
 
