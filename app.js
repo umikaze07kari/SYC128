@@ -733,7 +733,7 @@
     const headerH = 42;
     const widthWeights = stages.map((_, index) => .82 + index * .13);
     const weightTotal = widthWeights.reduce((sum, value) => sum + value, 0);
-    const colors = ["#e6e0e9", "#d8d0df", "#c9bfd3", "#b9acc5", "#a897b7", "#8b759d"];
+    const colors = ["#f3ef8f", "#8fd5d8", "#b2dfb7", "#f4c59f", "#9fc5e8", "#e7a4cd"];
     let x = boardX;
     stages.forEach((stage, stageIndex) => {
       const columnW = stageIndex === stages.length - 1
