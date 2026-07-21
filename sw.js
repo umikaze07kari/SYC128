@@ -1,4 +1,4 @@
-const CACHE = "dan-island-odyssey-v14";
+const CACHE = "dan-island-odyssey-v15";
 const ASSETS = ["./", "./index.html", "./styles.css", "./songs.js", "./vendor/qrcode.js", "./app.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg"];
 
 self.addEventListener("install", (event) => {
