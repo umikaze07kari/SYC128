@@ -115,6 +115,12 @@ function auditSubmission(payload) {
   return { status: flags.length ? "suspect" : "valid", flags, choiceCount: durations.length, medianChoiceMs: median(durations), fastChoiceCount: fastCount };
 }
 
+function resultFingerprint(placements) {
+  const tiers = ["champion", "finalist", "top4", "top8", "top16"];
+  const canonical = tiers.map((tier) => `${tier}:${placements.filter((item) => item.tier === tier).map((item) => item.songId).sort().join(",")}`).join("|");
+  return crypto.createHash("sha256").update(canonical).digest("hex");
+}
+
 function normalizedScores(payload) {
   const rows = [];
   const add = (board, items) => {
@@ -159,6 +165,7 @@ async function submit(body) {
   const now = new Date().toISOString();
   const record = {
     deviceKey,
+    resultFingerprint: resultFingerprint(payload.placements),
     journeyId: payload.journeyId,
     startedAt: payload.startedAt,
     completedAt: payload.completedAt,

@@ -61,9 +61,11 @@ powershell -ExecutionPolicy Bypass -File scripts/capture_mobile.ps1 -Url http://
 
 ## 腾讯云 CloudBase 内地主入口
 
-当前内地主站为 `https://dan-island-d8gwz7m0v7cc4c765-1422249946.tcloudbaseapp.com/`，排行榜 API 为 `https://dan-island-d8gwz7m0v7cc4c765.service.tcloudbase.com/api`。`config.js` 会优先使用腾讯云，失败时再尝试 Cloudflare；二维码保持当前镜像地址，不会把内地用户带回 GitHub。
+当前内地主站为 `https://dan-island-d8gwz7m0v7cc4c765-1422249946.tcloudbaseapp.com/`，排行榜 API 为 `https://dan-island-d8gwz7m0v7cc4c765.service.tcloudbase.com/api`。公开页面只使用腾讯云 API；GitHub Pages 仅保留为旧二维码的兼容入口，页面加载后立即跳转腾讯云。所有新生成的二维码也固定指向腾讯云，避免两套浏览器本地状态和两套数据库继续分叉。
 
 云函数源码位于 `tencent-cloudbase/functions/dan-island-proxy/`，配置位于 `cloudbaserc.json`。使用 Node.js 20 以上版本登录 CloudBase CLI 后，可分别部署函数和静态文件。默认 `tcloudbaseapp.com` 域名适合当前验证与过渡使用；正式长期面向内地用户时，仍建议准备已备案的自有域名并绑定 CloudBase。
+
+Cloudflare Worker 只保留管理页兼容与历史备份，不再承接公开提交或榜单读取。离线补录结果图时，由维护者先人工核验 `scripts/result-image-imports.json` 中的 Top 16 至冠军，再运行 `node scripts/import_results_to_cloudbase.js --apply`；脚本会同时读取 Cloudflare 历史记录，并按完整 Top 16 结果指纹跳过数据库中已存在的数据。
 
 ## 维护曲库
 
