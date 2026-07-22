@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>上传快速排查｜蛋岛环游记</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    main{max-width:760px;margin:auto;padding:32px 18px 64px}h1{margin:.3em 0}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.checks{display:grid;gap:12px}.check{padding:16px;border:1px solid #d9dfdc;border-radius:18px;background:#fffc}.check header{display:flex;justify-content:space-between;gap:12px}.check pre{white-space:pre-wrap;word-break:break-word;font:12px/1.6 monospace}.ok{color:#16734a}.fail{color:#b3261e}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">UPLOAD DIAGNOSTICS</p><h1>上传快速排查</h1>
+    <p>检查接口、数据库和本机上次上传状态；不会上传歌曲选择明细。</p>
+    <div class="actions"><button class="primary-button" id="run" type="button">开始检查</button><button class="soft-button" id="copy" type="button">复制结果</button><a class="soft-button result-link-button" href="index.html">返回测试</a></div>
+    <div class="checks" id="checks" aria-live="polite"></div>
+  </main>
+  <script src="config.js"></script>
+  <script>
+    (()=>{"use strict";const api=String(window.DAN_ISLAND_CONFIG?.apiBaseUrl||"").replace(/\/$/,"");const box=document.querySelector("#checks");const report=[];
+    function add(name,ok,summary,detail){report.push(`[${ok?"正常":"异常"}] ${name}\n${summary}${detail?`\n${detail}`:""}`);const card=document.createElement("section");card.className="check";const head=document.createElement("header"),title=document.createElement("b"),status=document.createElement("strong"),copy=document.createElement("div");title.textContent=name;status.className=ok?"ok":"fail";status.textContent=ok?"正常":"异常";copy.textContent=summary;head.append(title,status);card.append(head,copy);if(detail){const pre=document.createElement("pre");pre.textContent=detail;card.append(pre)}box.append(card)}
+    async function get(path){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000),start=performance.now();try{const response=await fetch(api+path,{cache:"no-store",signal:controller.signal});const text=await response.text();let data;try{data=JSON.parse(text)}catch{data={raw:text.slice(0,300)}}return{ok:response.ok,status:response.status,ms:Math.round(performance.now()-start),data}}finally{clearTimeout(timer)}}
+    async function run(){box.innerHTML="";report.length=0;add("浏览器环境",navigator.onLine,navigator.onLine?"浏览器报告当前在线。":"浏览器报告当前离线。",JSON.stringify({time:new Date().toISOString(),pageOrigin:location.origin,apiOrigin:api||"未配置",userAgent:navigator.userAgent},null,2));
+    try{const state=JSON.parse(localStorage.getItem("dan-island-odyssey-v13")||"null"),s=state?.submission||{};add("本机上次上传",!state||s.state!=="failed",state?`状态：${s.state||"未尝试"}`:"本机没有 v13 测试记录。",state?JSON.stringify({phase:state.phase,catalogSize:state.catalogIds?.length||0,decisionCount:state.auditEvents?.length||0,httpStatus:s.httpStatus||0,errorCode:s.errorCode||null,errorMessage:s.errorMessage||null,attemptedAt:s.attemptedAt||null},null,2):"")}catch(error){add("本机上次上传",false,"无法读取本机记录。",String(error))}
+    if(!api){add("API 配置",false,"config.js 未配置 apiBaseUrl。");return}
+    try{const h=await get("/api/health"),failed=Object.entries(h.data?.checks||{}).filter(([,v])=>!v.ok).map(([k])=>k);add("提交服务",h.ok&&h.data?.ok,h.ok&&h.data?.ok?`全部依赖正常（${h.ms}ms）。`:`HTTP ${h.status}；异常项：${failed.join(", ")||"未知"}`,JSON.stringify(h.data,null,2))}catch(error){add("提交服务",false,"无法连接 /api/health。",error.name==="AbortError"?"请求超过 12 秒":String(error))}
+    try{const r=await get("/api/leaderboard");add("排行榜读取",r.ok,r.ok?`HTTP ${r.status}（${r.ms}ms）。`:`HTTP ${r.status}`,JSON.stringify({validSubmissions:r.data?.validSubmissions,pendingReview:r.data?.pendingReview,generatedAt:r.data?.generatedAt},null,2))}catch(error){add("排行榜读取",false,"无法连接排行榜。",String(error))}}
+    document.querySelector("#run").onclick=run;document.querySelector("#copy").onclick=async()=>{const text=report.join("\n\n");try{await navigator.clipboard.writeText(text);document.querySelector("#copy").textContent="已复制"}catch{prompt("请长按复制",text)}};run()})();
+  </script>
+</body>
+</html>

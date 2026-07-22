@@ -77,6 +77,7 @@
     posterSaveHint: $("#posterSaveHint"),
     resultQr: $("#resultQr"),
     submissionStatus: $("#submissionStatus"),
+    retrySubmission: $("#retrySubmission"),
     toast: $("#toast")
   };
 
@@ -826,7 +827,10 @@
     if (!API_BASE_URL) return "总榜接口尚未配置，本次结果只保存在当前设备。";
     if (!result) return "准备汇入岛民总榜…";
     if (result.state === "pending") return "正在把本次结果汇入岛民总榜…";
-    if (result.state === "failed") return "本次结果暂未上传；下次打开结果页会自动重试。";
+    if (result.state === "failed") {
+      const detail = result.httpStatus ? `HTTP ${result.httpStatus}` : result.errorCode === "network-error" ? "网络请求失败" : "未知错误";
+      return `本次结果暂未上传（${detail}）；可点“重新上传结果”重试，或打开“上传快速排查”。`;
+    }
     if (result.reviewStatus === "invalid") return "此设备的结果已被人工标记为无效，当前不计入总榜。";
     if (result.reviewStatus === "suspect") return "结果已收到，因选择速度较快暂不计榜，等待人工复核。";
     return result.replaced ? "已更新此设备在总榜中的唯一一份结果。" : "结果已计入岛民总榜。";
@@ -834,6 +838,7 @@
 
   function updateSubmissionStatus() {
     if (els.submissionStatus) els.submissionStatus.textContent = submissionStatusText();
+    if (els.retrySubmission) els.retrySubmission.hidden = state.submission?.state !== "failed";
   }
 
   async function submitCompletedJourney() {
@@ -871,7 +876,12 @@
         body: JSON.stringify(payload)
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(result.error || `HTTP ${response.status}`);
+        error.httpStatus = response.status;
+        error.errorCode = result.code || "server-error";
+        throw error;
+      }
       state.submission = {
         state: "submitted",
         completedAt,
@@ -881,7 +891,14 @@
       };
     } catch (error) {
       console.warn("Leaderboard submission failed", error);
-      state.submission = { state: "failed", completedAt, attemptedAt: new Date().toISOString() };
+      state.submission = {
+        state: "failed",
+        completedAt,
+        attemptedAt: new Date().toISOString(),
+        httpStatus: Number(error.httpStatus) || 0,
+        errorCode: error.errorCode || (error instanceof TypeError ? "network-error" : "client-error"),
+        errorMessage: String(error.message || error).slice(0, 240)
+      };
     }
     save();
     updateSubmissionStatus();
@@ -1317,6 +1334,7 @@
       try { await navigator.clipboard.writeText(journeyUrl()); showToast("测试链接已复制"); }
       catch { showToast("复制失败，请使用浏览器分享地址"); }
     });
+    els.retrySubmission?.addEventListener("click", () => submitCompletedJourney());
     $("#makePoster").addEventListener("click", openPoster);
     $("#downloadPoster").addEventListener("click", downloadPoster);
     $("#sharePoster").addEventListener("click", sharePoster);

@@ -16,6 +16,7 @@ export default {
     try {
       let response;
       if (request.method === "POST" && url.pathname === "/api/submissions") response = await submit(request, env);
+      else if (request.method === "GET" && url.pathname === "/api/health") response = await health(env);
       else if (request.method === "GET" && url.pathname === "/api/leaderboard") response = await leaderboard(env);
       else if (url.pathname === "/api/admin/submissions" && request.method === "GET") response = await adminList(request, env);
       else if (/^\/api\/admin\/submissions\/\d+$/.test(url.pathname) && request.method === "GET") response = await adminDetail(request, env, Number(url.pathname.split("/").pop()));
@@ -64,8 +65,8 @@ async function readJson(request, maxBytes = 220000) {
   try { return JSON.parse(text); } catch { throw new PublicError("Invalid JSON"); }
 }
 
-function cleanId(value, name, max = 160) {
-  if (typeof value !== "string" || value.length < 8 || value.length > max || !/^[\w.-]+$/.test(value)) {
+function cleanId(value, name, max = 160, min = 8) {
+  if (typeof value !== "string" || value.length < min || value.length > max || !/^[\w.-]+$/.test(value)) {
     throw new PublicError(`Invalid ${name}`);
   }
   return value;
@@ -91,7 +92,7 @@ function validateSubmission(body) {
   const seen = new Set();
   const tierCounts = {};
   const placements = body.placements.map((item) => {
-    const songId = cleanId(item?.songId, "songId", 100);
+    const songId = cleanId(item?.songId, "songId", 100, 1);
     if (seen.has(songId)) throw new PublicError("Duplicate songId");
     seen.add(songId);
     const tier = item?.tier;
@@ -170,6 +171,32 @@ async function submit(request, env) {
   await env.DB.batch(statements);
 
   return json({ ok: true, submissionId, replaced: Boolean(existing), reviewStatus: audit.status });
+}
+
+async function health(env) {
+  const checks = {
+    worker: { ok: true },
+    deviceSalt: { ok: Boolean(env.DEVICE_SALT) },
+    database: { ok: false },
+    schema: { ok: false, missingTables: [] }
+  };
+  if (!env.DB) checks.database.error = "DB binding is not configured";
+  else {
+    try {
+      await env.DB.prepare("SELECT 1 AS ok").first();
+      checks.database.ok = true;
+      const required = ["submissions", "submission_items", "submission_attempts"];
+      const placeholders = required.map(() => "?").join(",");
+      const result = await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`).bind(...required).all();
+      const present = new Set((result.results || []).map((row) => row.name));
+      checks.schema.missingTables = required.filter((name) => !present.has(name));
+      checks.schema.ok = checks.schema.missingTables.length === 0;
+    } catch (error) {
+      checks.database.error = String(error?.message || error).slice(0, 160);
+    }
+  }
+  const ok = Object.values(checks).every((check) => check.ok);
+  return json({ ok, service: "dan-island-ranking-api", checks, generatedAt: new Date().toISOString() }, ok ? 200 : 503);
 }
 
 async function leaderboard(env) {
