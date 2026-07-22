@@ -46,6 +46,7 @@ const rawSongs = [
   ["qing-ren", "情人", "single", "solo", "抒情", "个人单曲", 82],
   ["always-on-my-way", "always on my way", "single", "collab", "R&B", "个人单曲 · 合唱", 76],
   ["sinking", "Sinking", "single", "collab", "R&B", "个人单曲 · 合唱", 75],
+  ["kong-er-huan-ni-mo-li", "空耳+还你茉莉", "single", "solo", "氛围", "个人单曲", 78],
 
   // OST：出处经公开音乐页面及作品资料核对
   ["xiang-ni-shi-feng-qi", "想你时风起", "ost", "solo", "抒情", "电视剧《我的人间烟火》· 回忆主题曲", 100],
@@ -116,6 +117,7 @@ const rawSongs = [
   ["wang-shi-zhi-neng-hui-wei-live", "往事只能回味", "live", "solo", "经典", "演唱会", 77],
   ["shou-zi-live", "瘦子", "live", "solo", "律动", "演唱会", 75],
   ["ye-jian-you-yong-chi-live", "夜间游泳池", "live", "collab", "氛围", "演唱会", 79],
+  ["ai-cuo-live", "爱错", "live", "collab", "抒情", "演唱会", 82],
 
   // 综艺舞台：2020《中国好声音》
   ["xiang-feng-yi-yang", "像风一样", "variety", "solo", "抒情", "综艺《2020中国好声音》", 88],
@@ -170,6 +172,7 @@ const rawSongs = [
   ["ai-shi-yong-heng", "爱是永恒", "variety", "collab", "大气", "综艺《声生不息·港乐季》", 82],
   ["qian-yi-ge-ye-wan", "千亿个夜晚", "variety", "collab", "经典", "综艺《声生不息·港乐季》", 78],
   ["ta-lai-ting-wo-de-yan-chang-hui", "她来听我的演唱会", "variety", "collab", "叙事", "综艺《声生不息·港乐季》", 84],
+  ["ni-man-wo-man", "你瞒我瞒", "variety", "solo", "抒情", "综艺《声生不息·大湾区季》", 82],
   ["ru-guo-ai-wang-le", "如果爱忘了", "variety", "collab", "抒情", "综艺《声生不息·家年华》", 84],
 
   // 《剧好听的歌》
@@ -415,12 +418,16 @@ const PROGRAM_COVER_IDS = {
   "综艺《爆裂舞台》": "rnb-all-night",
   "综艺《我们的歌》": "fu-er-mo-si",
   "综艺《声生不息·港乐季》": "ai-yu-tong-de-bian-yuan",
+  "综艺《声生不息·大湾区季》": "ni-man-wo-man",
   "综艺《剧好听的歌》": "rang-ta-jiang-luo",
   "综艺《音乐缘计划》": "let-me-go",
   "综艺《国乐无双》": "gan-lan-shu",
   "演唱会": "weak-live",
   "晚会舞台": "zhe-shi-jie-na-me-duo-ren"
 };
+
+// 少数现场拥有独立封面，不复用同一来源下的节目通用图。
+const INDIVIDUAL_COVER_IDS = new Set(["ai-cuo-live"]);
 
 // 这些封面文件由维护者放在 assets/covers/nophoto/ 作为记录；
 // 页面不请求该目录或同名 JPG，直接使用统一 default 图片。
@@ -443,7 +450,7 @@ window.SONG_CATALOG = rawSongs.map((row, index) => {
   const [id, title, source, vocal, mood, release, seedScore] = row;
   const color = SOURCE_META[source]?.colors || SOURCE_META.other.colors;
   const lyricExcerpt = HIGHLIGHT_LYRICS[id] || "";
-  const coverId = PROGRAM_COVER_IDS[release] || id;
+  const coverId = INDIVIDUAL_COVER_IDS.has(id) ? id : PROGRAM_COVER_IDS[release] || id;
   return {
     id,
     title,

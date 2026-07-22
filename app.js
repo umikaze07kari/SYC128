@@ -2,24 +2,46 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v14";
-  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v13", "dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
+  const STORAGE_KEY = "dan-island-odyssey-v15";
+  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v14", "dan-island-odyssey-v13", "dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
   const DEVICE_KEY = "dan-island-anonymous-device-v1";
   const API_BASE_URL = String(window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
   const LANDING_GROUP_SIZE = 4;
-  const BASE_LANDING_QUALIFIERS = 24;
-  const MAX_REVIVAL_SLOTS = 5;
-  const MIN_LANDING_QUALIFIERS = 32 - MAX_REVIVAL_SLOTS;
+  const BRACKET_SIZES = [16, 32, 64];
   const BOARD_OPTIONS = [
-    { key: "original", number: "01", title: "个人作品榜", description: "个人专辑与个人单曲", match: (song) => song.source === "album" || song.source === "single" },
-    { key: "ost", number: "02", title: "OST 榜", description: "影视、游戏与节目原声", match: (song) => song.source === "ost" },
-    { key: "stage", number: "03", title: "现场翻唱榜", description: "音综、晚会舞台与演唱会翻唱", match: (song) => ["live", "variety", "other"].includes(song.source) }
+    { key: "original", number: "01", title: "个人作品榜", description: "专辑曲＋个人单曲", match: (song) => song.source === "album" || song.source === "single" },
+    { key: "ost", number: "02", title: "OST 榜", description: "影视／游戏／节目原声", match: (song) => song.source === "ost" },
+    { key: "stage", number: "03", title: "现场翻唱榜", description: "音综／晚会／演唱会", match: (song) => ["live", "variety", "other"].includes(song.source) }
   ];
   const DEFAULT_BOARDS = BOARD_OPTIONS.map((board) => board.key);
   const boardForSong = (song) => BOARD_OPTIONS.find((board) => board.match(song))?.key || "stage";
+  const STAGE_COLLECTIONS = [
+    { key: "voice2020", group: "classic", label: "2020中国好声音", release: "综艺《2020中国好声音》" },
+    { key: "burstStage", group: "classic", label: "爆裂舞台", release: "综艺《爆裂舞台》" },
+    { key: "infinitySound", group: "classic", label: "声生不息", releases: ["综艺《声生不息·港乐季》", "综艺《声生不息·大湾区季》", "综艺《声生不息·家年华》"] },
+    { key: "dramaSongs", group: "classic", label: "剧好听的歌", release: "综艺《剧好听的歌》" },
+    { key: "singer2025", group: "classic", label: "歌手2025", release: "综艺《歌手2025》" },
+    { key: "giftedVoice", group: "other", label: "天赐的声音", release: "综艺《天赐的声音》" },
+    { key: "praiseSong", group: "other", label: "为歌而赞", release: "综艺《为歌而赞》" },
+    { key: "rapListen", group: "other", label: "说唱听我的", release: "综艺《说唱听我的》" },
+    { key: "ourSong", group: "other", label: "我们的歌", release: "综艺《我们的歌》" },
+    { key: "musicPlan", group: "other", label: "音乐缘计划", release: "综艺《音乐缘计划》" },
+    { key: "chinaMusic", group: "other", label: "国乐无双", release: "综艺《国乐无双》" },
+    { key: "gala", group: "gala", label: "晚会舞台", release: "晚会舞台" },
+    { key: "concert", group: "concert", label: "演唱会翻唱", release: "演唱会" }
+  ];
+  const STAGE_GROUPS = [
+    { key: "classic", title: "经典音综" },
+    { key: "other", title: "其他音综" },
+    { key: "gala", title: "晚会" },
+    { key: "concert", title: "演唱会翻唱" }
+  ];
+  const DEFAULT_STAGE_COLLECTIONS = STAGE_COLLECTIONS.map((item) => item.key);
+  const stageCollectionReleases = (item) => item.releases || [item.release];
   const ROUND_LABELS = {
+    duel64: "六十四进三十二",
     duel32: "三十二进十六",
     duel16: "十六进八",
     duel8: "八进四",
@@ -38,6 +60,9 @@
     collectionToggles: $("#collectionToggles"),
     selectedSongCount: $("#selectedSongCount"),
     startJourney: $("#startJourney"),
+    stageDetailPanel: $("#stageDetailPanel"),
+    stageDetailContent: $("#stageDetailContent"),
+    toggleStageDetails: $("#toggleStageDetails"),
     stageEnglish: $("#stageEnglish"),
     stageTitle: $("#stageTitle"),
     stageCounter: $("#stageCounter"),
@@ -139,11 +164,23 @@
     return albumCollision + sameRelease * 420 + sameSource * 90 - sameMood * 4 + groupPower * .08 + Math.random();
   }
 
-  function makeLandingGroups(pool) {
+  function bracketSizeFor(poolSize) {
+    if (poolSize >= 80) return 64;
+    if (poolSize >= 32) return 32;
+    return 16;
+  }
+
+  function revivalLimitFor(target) {
+    return target === 64 ? 8 : target === 32 ? 5 : 3;
+  }
+
+  function makeLandingGroups(pool, target = bracketSizeFor(pool.length)) {
+    const revivalLimit = revivalLimitFor(target);
+    const baseQualifiers = target - revivalLimit - Math.ceil(revivalLimit / 2);
     const ranked = [...pool].sort((a, b) => effectiveSeed(b) - effectiveSeed(a));
     let directCount = 0;
-    while (directCount < Math.min(32, pool.length)
-      && directCount + Math.ceil((pool.length - directCount) / LANDING_GROUP_SIZE) < BASE_LANDING_QUALIFIERS) directCount += 1;
+    while (directCount < Math.min(target, pool.length)
+      && directCount + Math.ceil((pool.length - directCount) / LANDING_GROUP_SIZE) < baseQualifiers) directCount += 1;
     const directSeeds = ranked.splice(0, directCount);
     const groupCount = Math.ceil(ranked.length / LANDING_GROUP_SIZE);
     const seeds = ranked.splice(0, groupCount);
@@ -167,30 +204,74 @@
     return { directSeeds: directSeeds.map((song) => song.id), groups: shuffled(groups).map((group) => shuffled(group)) };
   }
 
-  function firstStageTargetFor() { return 32; }
+  function firstStageTargetFor(poolSize) { return bracketSizeFor(poolSize); }
+
+  function estimateJourney(count) {
+    if (count < 16) return "暂不足 16 首";
+    const target = bracketSizeFor(count);
+    const revivalLimit = revivalLimitFor(target);
+    const baseQualifiers = target - revivalLimit - Math.ceil(revivalLimit / 2);
+    let directCount = 0;
+    while (directCount < Math.min(target, count)
+      && directCount + Math.ceil((count - directCount) / LANDING_GROUP_SIZE) < baseQualifiers) directCount += 1;
+    const initialGroups = Math.ceil((count - directCount) / LANDING_GROUP_SIZE);
+    const minimumLanding = target - revivalLimit;
+    const supplementGroups = Math.max(0, minimumLanding - directCount - initialGroups);
+    const choices = initialGroups + supplementGroups + revivalLimit + target - 1 + 2;
+    const minutes = Math.max(3, Math.round(choices * 7 / 60));
+    return `预计 ${Math.max(2, minutes - 2)}–${minutes + 2} 分钟`;
+  }
 
   function readJourneyConfig() {
     return {
       includeCollabs: $('input[name="vocalScope"]:checked')?.value !== "solo",
-      boards: $$('#collectionToggles input:checked').map((input) => input.value)
+      boards: $$('#collectionToggles input:checked').map((input) => input.value),
+      stageCollections: $$('#stageDetailContent input[data-stage-collection]:checked').map((input) => input.value)
     };
   }
 
   function songsForConfig(config) {
     const enabled = new Set(config.boards || []);
-    return songs.filter((song) => enabled.has(boardForSong(song)) && (config.includeCollabs || song.vocal !== "collab"));
+    const selectedStageKeys = new Set(config.stageCollections || []);
+    if (["infinityHK", "infinityBay", "infinityFamily"].some((key) => selectedStageKeys.has(key))) selectedStageKeys.add("infinitySound");
+    const stageReleases = new Set(STAGE_COLLECTIONS.filter((item) => selectedStageKeys.has(item.key)).flatMap(stageCollectionReleases));
+    return songs.filter((song) => {
+      const board = boardForSong(song);
+      if (!enabled.has(board) || (!config.includeCollabs && song.vocal === "collab")) return false;
+      return board !== "stage" || stageReleases.has(song.release);
+    });
+  }
+
+  function songsForBoard(boardKey, config) {
+    return songsForConfig({ ...config, boards: [boardKey] });
+  }
+
+  function renderStageDetails(config = null) {
+    const enabled = new Set(config?.stageCollections || DEFAULT_STAGE_COLLECTIONS);
+    if (["infinityHK", "infinityBay", "infinityFamily"].some((key) => enabled.has(key))) enabled.add("infinitySound");
+    els.stageDetailContent.innerHTML = STAGE_GROUPS.map((group) => {
+      const items = STAGE_COLLECTIONS.filter((item) => item.group === group.key);
+      return `<section class="stage-detail-group">
+        <div class="stage-detail-group-head"><b>${group.title}</b><button type="button" data-toggle-stage-group="${group.key}">全选／取消</button></div>
+        <div class="stage-detail-options">${items.map((item) => {
+          const releases = new Set(stageCollectionReleases(item));
+          const count = songs.filter((song) => releases.has(song.release)).length;
+          return `<label><input type="checkbox" data-stage-collection value="${item.key}" ${enabled.has(item.key) ? "checked" : ""}><span>${item.label}<small>${count} 首</small></span></label>`;
+        }).join("")}</div>
+      </section>`;
+    }).join("");
   }
 
   function renderJourneyConfig(config = null) {
     const enabled = new Set(config?.boards || DEFAULT_BOARDS);
     els.collectionToggles.innerHTML = BOARD_OPTIONS.map((board) => {
-      const count = songs.filter((song) => board.match(song)).length;
       return `<label class="board-switch board-${board.key}">
         <input type="checkbox" value="${board.key}" ${enabled.has(board.key) ? "checked" : ""}>
         <span class="board-check" aria-hidden="true"></span>
-        <span class="board-copy"><small>${board.number} / ${count} 首</small><b>${board.title}</b><em>${board.description}</em></span>
+        <span class="board-copy"><small>${board.number} / <i data-board-count="${board.key}">0 首</i></small><b>${board.title}</b><em>${board.description}</em><strong data-board-time="${board.key}">计算中…</strong></span>
       </label>`;
     }).join("");
+    renderStageDetails(config);
     const vocal = config?.includeCollabs === false ? "solo" : "all";
     $(`input[name="vocalScope"][value="${vocal}"]`).checked = true;
     updateSelectedCount();
@@ -199,7 +280,14 @@
   function updateSelectedCount() {
     const config = readJourneyConfig();
     const count = songsForConfig(config).length;
-    els.selectedSongCount.textContent = `${count} 首`;
+    els.selectedSongCount.textContent = `${count} 首 · ${estimateJourney(count)}`;
+    BOARD_OPTIONS.forEach((board) => {
+      const boardCount = songsForBoard(board.key, config).length;
+      $(`[data-board-count="${board.key}"]`).textContent = `${boardCount} 首`;
+      $(`[data-board-time="${board.key}"]`).textContent = estimateJourney(boardCount);
+    });
+    const stageEnabled = config.boards.includes("stage");
+    els.stageDetailPanel.hidden = !stageEnabled;
     const canStart = config.boards.length > 0;
     els.startJourney.disabled = !canStart;
     els.startJourney.title = canStart ? "" : "请至少选择一个板块";
@@ -230,14 +318,15 @@
   }
 
   function freshState(pool, config) {
-    const { directSeeds, groups } = makeLandingGroups(pool);
+    const firstStageTarget = firstStageTargetFor(pool.length);
+    const { directSeeds, groups } = makeLandingGroups(pool, firstStageTarget);
     return {
-      version: 14,
+      version: 15,
       journeyId: journeyId(),
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
       config,
-      firstStageTarget: firstStageTargetFor(pool.length),
+      firstStageTarget,
       phase: "landing",
       directSeeds,
       groups,
@@ -259,6 +348,7 @@
       top8RevivalCandidates: [],
       revivalChallenger: null,
       revivalDefender: null,
+      top64: [],
       top32: [],
       top16: [],
       top8: [],
@@ -282,7 +372,7 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
       const saved = JSON.parse(raw);
-      if (saved?.version === 14) return saved;
+      if (saved?.version === 15) return saved;
       return null;
     } catch {
       return null;
@@ -366,7 +456,7 @@
     const config = readJourneyConfig();
     const pool = songsForConfig(config);
     if (!config.boards.length) return showToast("请至少选择一个喜欢的板块");
-    if (pool.length < 32) return showToast("当前范围不足 32 首，请包含合唱或增加一个板块");
+    if (pool.length < 16) return showToast("当前范围不足 16 首，请增加一些感兴趣的内容");
     state = freshState(pool, config);
     save();
     renderCurrent();
@@ -419,11 +509,11 @@
     const supplement = !tiebreak && state.supplementScheduled && state.groupIndex >= state.initialGroupCount;
     const ids = tiebreak ? state.landingTiebreak : state.groups[state.groupIndex];
     const group = ids.map(byId);
-    els.stageEnglish.textContent = tiebreak ? "TOP 32 PLAY-IN" : supplement ? "SECOND CHANCE PLAY-IN" : "LANDING ROUND";
-    els.stageTitle.textContent = tiebreak ? `三十二强加赛 · ${ids.length}选一` : supplement ? `遗珠加赛 · ${ids.length}选一` : `登岛海选 · ${ids.length}选一`;
+    els.stageEnglish.textContent = tiebreak ? `TOP ${state.firstStageTarget} PLAY-IN` : supplement ? "SECOND CHANCE PLAY-IN" : "LANDING ROUND";
+    els.stageTitle.textContent = tiebreak ? `${state.firstStageTarget} 强加赛 · ${ids.length}选一` : supplement ? `遗珠加赛 · ${ids.length}选一` : `登岛海选 · ${ids.length}选一`;
     els.stageCounter.textContent = tiebreak ? "最后一组" : `${state.groupIndex + 1} / ${state.groups.length}`;
     els.roundProgress.style.width = tiebreak ? "100%" : `${(state.groupIndex / state.groups.length) * 100}%`;
-    els.choiceHint.textContent = tiebreak ? "最后一个三十二强席位" : supplement ? "用加赛减少需要手动送回的遗珠" : "从这组里留下唯一一首";
+    els.choiceHint.textContent = tiebreak ? `最后一个 ${state.firstStageTarget} 强席位` : supplement ? "用加赛减少需要手动送回的遗珠" : "从这组里留下唯一一首";
     els.choiceTitle.textContent = tiebreak ? "谁来拿到最后一张通行票？" : supplement ? "这一组，谁值得重新登岛？" : "哪一首值得先登岛？";
     els.choiceGrid.className = "choice-grid four-up";
     els.choiceGrid.innerHTML = group.map(choiceCard).join("");
@@ -456,8 +546,9 @@
       return;
     }
     const landing = [...state.directSeeds, ...state.groupWinners];
-    if (landing.length < MIN_LANDING_QUALIFIERS && !state.supplementScheduled) {
-      const slotCount = MIN_LANDING_QUALIFIERS - landing.length;
+    const minimumLandingQualifiers = state.firstStageTarget - revivalLimitFor(state.firstStageTarget);
+    if (landing.length < minimumLandingQualifiers && !state.supplementScheduled) {
+      const slotCount = minimumLandingQualifiers - landing.length;
       const candidates = shuffled(state.eliminated).slice(0, slotCount * LANDING_GROUP_SIZE);
       const candidateSet = new Set(candidates);
       const supplementGroups = Array.from({ length: slotCount }, () => []);
@@ -508,6 +599,7 @@
     const pair = state.duelPairs[state.duelIndex].map(byId);
     const isFinal = state.phase === "final";
     const stageMeta = {
+      duel64: ["OPEN SEA DUEL", "六十四进三十二 · 二选一"],
       duel32: ["COASTLINE DUEL", "三十二进十六 · 二选一"],
       duel16: ["TIDAL DUEL", "十六进八 · 二选一"],
       duel8Revival: ["TOP 8 WILDCARD", "八强复活挑战 · 二选一"],
@@ -564,7 +656,13 @@
       label: ROUND_LABELS[state.phase],
       matches: state.duelPairs.map((pair, index) => ({ songs: [...pair], winner: state.duelWinners[index] }))
     });
-    if (state.phase === "duel32") {
+    if (state.phase === "duel64") {
+      state.top32 = [...state.duelWinners];
+      state.duelPairs = makeDuelPairs(state.top32);
+      state.duelIndex = 0;
+      state.duelWinners = [];
+      setCheckpoint("接下来，三十二进十六", "成功晋级的三十二首歌正在靠近海岸线。", "duel32", true);
+    } else if (state.phase === "duel32") {
       state.top16 = [...state.duelWinners];
       state.duelPairs = makeDuelPairs(state.top16);
       state.duelIndex = 0;
@@ -612,7 +710,7 @@
   }
 
   function selectionLimit() {
-    return state.selectionMode === "top8Revival" ? 1 : Math.min(MAX_REVIVAL_SLOTS, state.revivalSlots);
+    return state.selectionMode === "top8Revival" ? 1 : Math.min(revivalLimitFor(state.firstStageTarget), state.revivalSlots);
   }
 
   function groupedSelectionCandidates() {
@@ -633,7 +731,7 @@
     $("#selectionTitle").textContent = top8Revival ? "八强复活名额" : "潮水送回一些遗珠";
     $("#selectionCopy").innerHTML = top8Revival
       ? `从刚刚惜败的歌里选择 <b id="selectionNeed">1</b> 首，向八强发起一次复活挑战。`
-      : `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足三十二强。`;
+      : `从离岛歌曲中选回 <b id="selectionNeed">${limit}</b> 首，补足 ${state.firstStageTarget} 强。`;
     els.selectionNeed = $("#selectionNeed");
     els.selectionCount.textContent = `${state.selection.length} / ${limit}`;
     els.confirmSelection.disabled = state.selection.length !== limit;
@@ -696,14 +794,17 @@
   }
 
   function launchFirstDuel(ids) {
-    state.top32 = [...ids];
+    const openingPhase = state.firstStageTarget === 64 ? "duel64" : state.firstStageTarget === 32 ? "duel32" : "duel16";
+    if (state.firstStageTarget === 64) state.top64 = [...ids];
+    else if (state.firstStageTarget === 32) state.top32 = [...ids];
+    else state.top16 = [...ids];
     state.duelPairs = makeDuelPairs(ids);
     state.duelIndex = 0;
     state.duelWinners = [];
     setCheckpoint(
       "接下来，开始双歌对决",
       `${state.firstStageTarget} 首歌成功晋级，正在浮向环岛航线。`,
-      "duel32"
+      openingPhase
     );
   }
 
@@ -713,8 +814,10 @@
   }
 
   function trajectoryStages() {
-    const phases = ["duel32", "duel16", "duel8", "duel4"];
-    const counts = [32, 16, 8, 4, 2, 1];
+    const allPhases = ["duel64", "duel32", "duel16", "duel8", "duel4"];
+    const startIndex = state.firstStageTarget === 64 ? 0 : state.firstStageTarget === 32 ? 1 : 2;
+    const phases = allPhases.slice(startIndex);
+    const counts = [64, 32, 16, 8, 4, 2, 1].slice(startIndex);
     const rounds = phases.map((phase) => {
       const completed = state.bracketRounds.find((round) => round.phase === phase);
       if (completed) return { phase, matches: completed.matches.map((match) => ({ ...match, songs: [...match.songs] })) };
@@ -737,7 +840,7 @@
     const labels = counts.map((count) => count === 1 ? "Top 1" : `${count}强`);
     const idsByStage = counts.map(() => []);
     if (rounds[0]) idsByStage[0] = rounds[0].matches.flatMap((match) => match.songs);
-    else idsByStage[0] = [...state.top32];
+    else idsByStage[0] = [...(state.firstStageTarget === 64 ? state.top64 : state.firstStageTarget === 32 ? state.top32 : state.top16)];
     phases.forEach((phase, index) => {
       const round = rounds[index];
       if (round?.matches.every((match) => match.winner)) idsByStage[index + 1] = round.matches.map((match) => match.winner);
@@ -768,6 +871,7 @@
     $("#checkpointCopy").textContent = state.checkpoint.copy;
     els.checkpointUndo.hidden = !state.checkpoint.undoable;
     const qualifiedByPhase = {
+      duel64: state.top64,
       duel32: state.top32,
       duel16: state.top16,
       duel8: state.top8,
@@ -800,7 +904,8 @@
       { tier: "top4", ids: state.top4.filter((id) => !state.top2.includes(id)) },
       { tier: "top8", ids: state.top8.filter((id) => !state.top4.includes(id)) },
       { tier: "top16", ids: state.top16.filter((id) => !state.top8.includes(id)) },
-      { tier: "top32", ids: state.top32.filter((id) => !state.top16.includes(id)) }
+      { tier: "top32", ids: state.top32.filter((id) => !state.top16.includes(id)) },
+      { tier: "top64", ids: state.top64.filter((id) => !state.top32.includes(id)) }
     ];
     let rank = 1;
     return groups.flatMap((group) => {
@@ -848,6 +953,7 @@
       completedAt,
       durationMs: Math.max(0, Date.parse(completedAt) - Date.parse(startedAt)),
       catalogSize: state.catalogIds.length,
+      bracketSize: state.firstStageTarget,
       config: state.config,
       placements: placementRows().map((item) => ({ ...item, board: boardForSong(byId(item.songId)) })),
       events
@@ -910,7 +1016,7 @@
   function renderCurrent() {
     if (!state) return showView("home");
     if (["landing", "landingTiebreak"].includes(state.phase)) renderLanding();
-    else if (["duel32", "duel16", "duel8Revival", "duel8", "duel4", "final"].includes(state.phase)) renderDuel();
+    else if (["duel64", "duel32", "duel16", "duel8Revival", "duel8", "duel4", "final"].includes(state.phase)) renderDuel();
     else if (["revival", "top8Revival"].includes(state.phase)) renderSelection();
     else if (state.phase === "checkpoint") renderCheckpoint();
     else if (state.phase === "complete") renderResult();
@@ -1067,7 +1173,7 @@
     ctx.fillText("完整晋级轨迹", 45, 352);
     ctx.fillStyle = "#708074";
     ctx.font = "14px 'Microsoft YaHei'";
-    ctx.fillText("三十二强至 Top 1 · 歌名自动换行", 315, 351);
+    ctx.fillText(`${state.firstStageTarget} 强至 Top 1 · 歌名自动换行`, 315, 351);
 
     const stages = trajectoryStages();
     const boardX = 45;
@@ -1121,8 +1227,8 @@
     ctx.fillText("把蛋岛地图漂流给下一位纯牛奶", 45, 1845);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
-    ctx.fillText("选择只保存在本机 · 蛋岛环游记", 45, 1882);
-    ctx.fillText(new Date().toLocaleDateString("zh-CN"), 45, 1918);
+    ctx.fillText("曲库来源：公开发行作品、影视原声与公开舞台整理", 45, 1882);
+    ctx.fillText(`选择只保存在本机 · 蛋岛环游记 · ${new Date().toLocaleDateString("zh-CN")}`, 45, 1918);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
   }
@@ -1279,6 +1385,24 @@
     $$('[data-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
     $("#startJourney").addEventListener("click", startJourney);
     els.collectionToggles.addEventListener("change", updateSelectedCount);
+    els.toggleStageDetails.addEventListener("click", () => {
+      const expanded = els.toggleStageDetails.getAttribute("aria-expanded") === "true";
+      els.toggleStageDetails.setAttribute("aria-expanded", String(!expanded));
+      els.stageDetailContent.hidden = expanded;
+      $("i", els.toggleStageDetails).textContent = expanded ? "＋" : "－";
+    });
+    els.stageDetailContent.addEventListener("change", updateSelectedCount);
+    els.stageDetailContent.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-toggle-stage-group]");
+      if (!button) return;
+      const inputs = $$(`input[data-stage-collection]`, els.stageDetailContent).filter((input) => {
+        const item = STAGE_COLLECTIONS.find((candidate) => candidate.key === input.value);
+        return item?.group === button.dataset.toggleStageGroup;
+      });
+      const nextChecked = !inputs.every((input) => input.checked);
+      inputs.forEach((input) => { input.checked = nextChecked; });
+      updateSelectedCount();
+    });
     $$('input[name="vocalScope"]').forEach((input) => input.addEventListener("change", updateSelectedCount));
     els.continueJourney.addEventListener("click", () => { state = load(); renderCurrent(); });
     $("#pauseJourney").addEventListener("click", () => { save(); updateContinue(); showView("home"); });

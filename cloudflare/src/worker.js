@@ -4,7 +4,8 @@ const SCORE_BY_TIER = Object.freeze({
   top4: 45,
   top8: 28,
   top16: 16,
-  top32: 8
+  top32: 8,
+  top64: 4
 });
 const ALLOWED_BOARDS = new Set(["overall", "original", "ost", "stage"]);
 
@@ -86,9 +87,12 @@ function validateSubmission(body) {
   const completedAt = validIso(body.completedAt, "completedAt");
   const durationMs = Math.round(Number(body.durationMs));
   const catalogSize = Math.round(Number(body.catalogSize));
+  const requestedBracketSize = Number(body.bracketSize);
+  const bracketSize = body.schemaVersion === 1 ? 32 : Number.isFinite(requestedBracketSize) ? Math.round(requestedBracketSize) : body.placements?.length;
   if (!Number.isFinite(durationMs) || durationMs < 0 || durationMs > 30 * 24 * 3600 * 1000) throw new PublicError("Invalid durationMs");
-  if (!Number.isInteger(catalogSize) || catalogSize < 32 || catalogSize > 500) throw new PublicError("Invalid catalogSize");
-  if (!Array.isArray(body.placements) || body.placements.length !== 32) throw new PublicError("Exactly 32 placements are required");
+  if (!Number.isInteger(catalogSize) || catalogSize < 16 || catalogSize > 500) throw new PublicError("Invalid catalogSize");
+  if (![16, 32, 64].includes(bracketSize) || bracketSize > catalogSize) throw new PublicError("Invalid bracketSize");
+  if (!Array.isArray(body.placements) || body.placements.length !== bracketSize) throw new PublicError(`Exactly ${bracketSize} placements are required`);
 
   const seen = new Set();
   const tierCounts = {};
@@ -101,12 +105,14 @@ function validateSubmission(body) {
     tierCounts[tier] = (tierCounts[tier] || 0) + 1;
     const rankStart = Math.round(Number(item.rankStart));
     const rankEnd = Math.round(Number(item.rankEnd));
-    if (rankStart < 1 || rankEnd < rankStart || rankEnd > 32) throw new PublicError("Invalid placement rank");
+    if (rankStart < 1 || rankEnd < rankStart || rankEnd > bracketSize) throw new PublicError("Invalid placement rank");
     const board = body.schemaVersion === 2 ? String(item?.board || "") : "overall";
     if (body.schemaVersion === 2 && (!ALLOWED_BOARDS.has(board) || board === "overall")) throw new PublicError("Invalid placement board");
     return { songId, tier, rankStart, rankEnd, points: SCORE_BY_TIER[tier], board };
   });
-  const expected = { champion: 1, finalist: 1, top4: 2, top8: 4, top16: 8, top32: 16 };
+  const expected = { champion: 1, finalist: 1, top4: 2, top8: 4, top16: 8 };
+  if (bracketSize >= 32) expected.top32 = 16;
+  if (bracketSize >= 64) expected.top64 = 32;
   if (Object.entries(expected).some(([tier, count]) => tierCounts[tier] !== count)) throw new PublicError("Invalid placement distribution");
 
   const events = Array.isArray(body.events) ? body.events.slice(0, 250).map((event) => ({
@@ -122,7 +128,7 @@ function validateSubmission(body) {
   if (boards.some((board) => !ALLOWED_BOARDS.has(board) || board === "overall")) throw new PublicError("Invalid board selection");
   if (body.schemaVersion === 2 && !boards.length) throw new PublicError("At least one board is required");
   if (body.schemaVersion === 2 && placements.some((item) => !boards.includes(item.board))) throw new PublicError("Placement outside selected boards");
-  return { ...body, deviceId, journeyId, startedAt, completedAt, durationMs, catalogSize, config: { ...(body.config || {}), boards }, placements, events };
+  return { ...body, deviceId, journeyId, startedAt, completedAt, durationMs, catalogSize, bracketSize, config: { ...(body.config || {}), boards }, placements, events };
 }
 
 function normalizedScoreRows(payload) {
@@ -166,7 +172,8 @@ function auditSubmission(payload, env) {
   const fastCount = durations.filter((value) => value < fastThreshold).length;
   const fastRatio = durations.length ? fastCount / durations.length : 1;
   const configuredMinimum = Number(env.MIN_DECISIONS || 40);
-  const minimumDecisions = payload.catalogSize < 50 ? Math.min(configuredMinimum, 34) : configuredMinimum;
+  const bracketMinimum = payload.bracketSize === 16 ? 20 : payload.bracketSize === 32 ? 34 : 40;
+  const minimumDecisions = Math.min(configuredMinimum, bracketMinimum);
   const flags = [];
   if (payload.durationMs < Number(env.MIN_DURATION_MS || 60000)) flags.push("total-too-fast");
   if (durations.length < minimumDecisions) flags.push("too-few-decision-records");

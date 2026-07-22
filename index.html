@@ -34,12 +34,17 @@
         <div class="hero-copy">
           <p class="eyebrow">EGG ISLAND · MUSIC ODYSSEY</p>
           <h1>沿着单依纯的音乐地图，<span>选出心里的最爱。</span></h1>
-          <p>选择你的 Top 1，再看所有人的答案。三个音乐板块自由组合，可以只选最熟悉的一类，也可以全部加入环游。</p>
+          <p class="custom-challenge-callout"><b>已经玩过热门歌曲？</b> 来试试自定义挑战吧。也可以<a href="leaderboard.html">查看大家的结果</a>。</p>
 
           <section class="launch-config" aria-labelledby="rangeTitle">
-            <div class="config-heading"><span>01 / 出发准备</span><b id="rangeTitle">选择本次环游范围</b><em id="selectedSongCount">166 首</em></div>
-            <div class="config-subhead"><b>喜欢哪一站，就带上哪一站</b><span>至少选择 1 个，可全选</span></div>
+            <div class="config-heading"><span>01 / 出发准备</span><b id="rangeTitle">选择本次环游范围</b><em id="selectedSongCount">169 首</em></div>
             <div class="collection-toggles board-toggles" id="collectionToggles"></div>
+            <section class="stage-detail-panel" id="stageDetailPanel">
+              <button class="stage-detail-toggle" id="toggleStageDetails" type="button" aria-expanded="false" aria-controls="stageDetailContent">
+                <span><b>细选现场范围</b><small>按节目勾选</small></span><i aria-hidden="true">＋</i>
+              </button>
+              <div class="stage-detail-content" id="stageDetailContent" hidden></div>
+            </section>
             <fieldset class="vocal-scope">
               <legend>演唱形式</legend>
               <label><input type="radio" name="vocalScope" value="solo"><span>仅保留独唱</span></label>
@@ -60,7 +65,7 @@
       <div class="stage-bar">
         <div class="stage-actions"><button class="back-button" id="pauseJourney" type="button" aria-label="暂停">×</button><button class="back-button undo-button" id="undoChoice" type="button" aria-label="撤回上次选择" title="撤回上次选择">↶</button></div>
         <div><p id="stageEnglish">LANDING ROUND</p><strong id="stageTitle">登岛海选 · 四选一</strong></div>
-        <span id="stageCounter">1 / 34</span>
+        <span id="stageCounter">1 / —</span>
       </div>
       <div class="round-progress"><span id="roundProgress"></span></div>
 
@@ -78,7 +83,7 @@
       <div class="selection-head">
         <p class="eyebrow" id="selectionEyebrow">TIDAL REVIVAL</p>
         <h2 id="selectionTitle">潮水送回一些遗珠</h2>
-        <p id="selectionCopy">从离岛歌曲中选回 <b id="selectionNeed">2</b> 首，补足三十二强。</p>
+        <p id="selectionCopy">从离岛歌曲中选回 <b id="selectionNeed">2</b> 首，补足下一阶段名额。</p>
         <span class="selection-count" id="selectionCount">0 / 2</span>
       </div>
       <div class="selection-grid" id="selectionGrid"></div>
@@ -143,8 +148,8 @@
       <li><b>出发配置：</b>个人作品、OST、现场翻唱三个板块可自由多选，也可以只玩其中一个。</li>
       <li><b>登岛海选：</b>根据本次曲目数量自动编成若干组四选一；选择用时只影响后续同组内的上下位置。</li>
       <li><b>熟悉度配对：</b>同节目、同类作品优先内部相遇，让跨板块决战尽量留到后段。</li>
-      <li><b>潮汐复活：</b>海选人数不足时，从遗珠中补足三十二强；人数超出时进行最后席位加赛。</li>
-      <li><b>双歌对决：</b>三十二强依次缩减为十六强、八强、四强和二强；十六进八后可从本轮遗珠中选一首发起八强复活挑战。</li>
+      <li><b>动态赛制：</b>小曲库从十六强开始，常规曲库进入三十二强，超大曲库从六十四强启程。</li>
+      <li><b>双歌对决：</b>每轮两两选择直至 Top 1；十六进八后可从本轮遗珠中选一首发起八强复活挑战。</li>
       <li><b>挚爱决选：</b>最后一次二选一，选出你心里的 Top 1。</li>
     </ol>
     <p>“都不熟悉”只在第一阶段出现；它不会随机替你选歌，复活名额会自动增加。</p>
