@@ -1,5 +1,5 @@
-const CACHE = "dan-island-odyssey-v48";
-const ASSETS = ["./", "./index.html", "./leaderboard.html", "./diagnostics.html", "./styles.css", "./songs.js", "./config.js", "./vendor/qrcode.js", "./audio.js", "./app.js", "./leaderboard.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg", "./assets/covers/default.jpg"];
+const CACHE = "dan-island-odyssey-v49";
+const ASSETS = ["./", "./index.html", "./leaderboard.html", "./diagnostics.html", "./styles.css", "./songs.js", "./config.js", "./vendor/qrcode.js", "./audio.js", "./app.js", "./leaderboard.js", "./diagnostics.js", "./manifest.webmanifest", "./assets/icon.svg", "./assets/island.svg", "./assets/cover-fallback.svg", "./assets/covers/default.jpg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
@@ -13,9 +13,17 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
   event.respondWith(fetch(event.request).then((response) => {
-    const copy = response.clone();
-    caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+    if (response.ok) {
+      const copy = response.clone();
+      caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+    }
     return response;
-  }).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))));
+  }).catch(() => caches.match(event.request).then((cached) => {
+    if (cached) return cached;
+    if (event.request.mode === "navigate") return caches.match("./index.html");
+    return Response.error();
+  })));
 });

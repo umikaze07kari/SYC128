@@ -1,6 +1,7 @@
 (() => {
   "use strict";
-  const api = String(window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
+  const configuredApis = Array.isArray(window.DAN_ISLAND_CONFIG?.apiBaseUrls) ? window.DAN_ISLAND_CONFIG.apiBaseUrls : [];
+  const api = String(window.DAN_ISLAND_CONFIG?.adminApiBaseUrl || configuredApis.find(Boolean) || window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
   const songById = new Map((window.SONG_CATALOG || []).map((song) => [song.id, song]));
   const tokenInput = document.querySelector("#adminToken");
   const login = document.querySelector("#adminLogin");

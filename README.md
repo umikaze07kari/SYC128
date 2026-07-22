@@ -59,6 +59,12 @@ powershell -ExecutionPolicy Bypass -File scripts/capture_mobile.ps1 -Url http://
 
 项目没有海外运行依赖，但 `github.io` 在中国内地的连通性仍取决于当地网络和 GitHub，无法保证所有运营商、所有时段均可访问。若需要商业级稳定性，应另配已备案的内地静态托管或 CDN。
 
+## 腾讯云 CloudBase 内地主入口
+
+当前内地主站为 `https://dan-island-d8gwz7m0v7cc4c765-1422249946.tcloudbaseapp.com/`，排行榜 API 为 `https://dan-island-d8gwz7m0v7cc4c765.service.tcloudbase.com/api`。`config.js` 会优先使用腾讯云，失败时再尝试 Cloudflare；二维码保持当前镜像地址，不会把内地用户带回 GitHub。
+
+云函数源码位于 `tencent-cloudbase/functions/dan-island-proxy/`，配置位于 `cloudbaserc.json`。使用 Node.js 20 以上版本登录 CloudBase CLI 后，可分别部署函数和静态文件。默认 `tcloudbaseapp.com` 域名适合当前验证与过渡使用；正式长期面向内地用户时，仍建议准备已备案的自有域名并绑定 CloudBase。
+
 ## 维护曲库
 
 曲库位于 `songs.js` 的 `rawSongs`：
@@ -116,7 +122,9 @@ npx wrangler secret put ADMIN_TOKEN
 npx wrangler deploy
 ```
 
-将部署结果中的 `https://...workers.dev` 地址填入项目根目录 `config.js` 的 `apiBaseUrl`。如果 GitHub Pages 使用了自定义域名，也要把该域名加入 `cloudflare/wrangler.toml` 的 `ALLOWED_ORIGINS` 后重新部署。
+将部署结果中的 `https://...workers.dev` 地址填入项目根目录 `config.js` 的 `apiBaseUrls`。数组会按顺序尝试，因此可把中国内地可达、实现相同 API 契约的接口放在第一项，把 Cloudflare Worker 留作境外兜底。如果静态站使用了自定义域名，也要把该域名加入各接口的 CORS 白名单。
+
+面向中国内地用户时，不应把 `github.io` 和 `workers.dev` 作为唯一生产入口。建议把同一套静态文件镜像到中国内地云厂商的静态托管，并把提交 API 与数据库迁到同一家厂商的云函数与数据库；使用中国内地节点和自定义域名通常需要 ICP 备案。`shareUrl` 留空时，二维码会自动指向用户当前访问的镜像，避免又跳回 GitHub Pages。
 
 ### 自动检测与人工复核
 

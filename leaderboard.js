@@ -1,7 +1,9 @@
 (() => {
   "use strict";
 
-  const apiBaseUrl = String(window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
+  const configuredApiUrls = Array.isArray(window.DAN_ISLAND_CONFIG?.apiBaseUrls) ? window.DAN_ISLAND_CONFIG.apiBaseUrls : [];
+  const apiBaseUrls = [...new Set([...configuredApiUrls, window.DAN_ISLAND_CONFIG?.apiBaseUrl]
+    .map((value) => String(value || "").replace(/\/$/, "")).filter(Boolean))];
   const songs = window.SONG_CATALOG || [];
   const songById = new Map(songs.map((song) => [song.id, song]));
   const fallbackCover = "assets/cover-fallback.svg";
@@ -64,13 +66,26 @@
   }
 
   async function load() {
-    if (!apiBaseUrl) return showError("总榜接口尚未配置。请先在 config.js 中填写 Cloudflare Worker 地址。");
+    if (!apiBaseUrls.length) return showError("总榜接口尚未配置。请先在 config.js 中填写接口地址。");
     refreshButton.disabled = true;
     try {
-      const response = await fetch(`${apiBaseUrl}/api/leaderboard?board=${encodeURIComponent(activeBoard)}`, { cache: "no-store" });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
-      render(data);
+      let lastError = null;
+      for (const apiBaseUrl of apiBaseUrls) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/leaderboard?board=${encodeURIComponent(activeBoard)}`, { cache: "no-store", signal: controller.signal });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+          render(data);
+          return;
+        } catch (error) {
+          lastError = error;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      throw lastError || new Error("所有榜单接口均不可达");
     } catch (error) {
       showError(`加载失败：${error.message}`);
     } finally {

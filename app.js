@@ -5,9 +5,11 @@
   const STORAGE_KEY = "dan-island-odyssey-v15";
   const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v14", "dan-island-odyssey-v13", "dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
-  const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
+  const configuredApiUrls = Array.isArray(window.DAN_ISLAND_CONFIG?.apiBaseUrls) ? window.DAN_ISLAND_CONFIG.apiBaseUrls : [];
+  const API_BASE_URLS = [...new Set([...configuredApiUrls, window.DAN_ISLAND_CONFIG?.apiBaseUrl]
+    .map((value) => String(value || "").replace(/\/$/, "")).filter(Boolean))];
   const DEVICE_KEY = "dan-island-anonymous-device-v1";
-  const API_BASE_URL = String(window.DAN_ISLAND_CONFIG?.apiBaseUrl || "").replace(/\/$/, "");
+  const API_REQUEST_TIMEOUT_MS = 12000;
   const LANDING_GROUP_SIZE = 4;
   const BRACKET_SIZES = [16, 32, 64];
   const BOARD_OPTIONS = [
@@ -832,21 +834,38 @@
     if (available.length) {
       for (let index = available.length - 2; index >= 0; index -= 1) {
         const desired = available[index + 1].matches.flatMap((match) => match.songs);
-        available[index].matches.sort((a, b) => desired.indexOf(a.winner) - desired.indexOf(b.winner));
+        const desiredIndex = (match) => {
+          const positions = match.songs.map((id) => desired.indexOf(id)).filter((position) => position >= 0);
+          return positions.length ? Math.min(...positions) : Number.MAX_SAFE_INTEGER;
+        };
+        available[index].matches.sort((a, b) => desiredIndex(a) - desiredIndex(b));
       }
     }
 
     const labels = counts.map((count) => count === 1 ? "Top 1" : `${count}强`);
     const idsByStage = counts.map(() => []);
-    if (rounds[0]) idsByStage[0] = rounds[0].matches.flatMap((match) => match.songs);
-    else idsByStage[0] = [...(state.firstStageTarget === 64 ? state.top64 : state.firstStageTarget === 32 ? state.top32 : state.top16)];
     phases.forEach((phase, index) => {
       const round = rounds[index];
-      if (round?.matches.every((match) => match.winner)) idsByStage[index + 1] = round.matches.map((match) => match.winner);
+      if (round) idsByStage[index] = round.matches.flatMap((match) => match.songs);
     });
+    if (!idsByStage[0].length) idsByStage[0] = [...(state.firstStageTarget === 64 ? state.top64 : state.firstStageTarget === 32 ? state.top32 : state.top16)];
     idsByStage[counts.length - 2] = state.finalists?.length ? [...state.finalists] : [];
     idsByStage[counts.length - 1] = state.champion ? [state.champion] : [];
     return counts.map((expected, index) => ({ label: labels[index], expected, ids: idsByStage[index] }));
+  }
+
+  function trajectoryIntegrity(stages) {
+    const trajectoryIssues = [];
+    stages.forEach((stage, index) => {
+      if (stage.ids.length !== stage.expected) trajectoryIssues.push(`${stage.label}: expected ${stage.expected}, got ${stage.ids.length}`);
+      if (new Set(stage.ids).size !== stage.ids.length) trajectoryIssues.push(`${stage.label}: duplicate song id`);
+      if (index > 0) {
+        const previous = new Set(stages[index - 1].ids);
+        const unexpected = stage.ids.filter((id) => !previous.has(id));
+        if (unexpected.length) trajectoryIssues.push(`${stage.label}: not in previous stage (${unexpected.join(",")})`);
+      }
+    });
+    return trajectoryIssues;
   }
 
   function renderTrajectory(container) {
@@ -916,11 +935,14 @@
   }
 
   function submissionStatusText(result = state.submission) {
-    if (!API_BASE_URL) return "总榜接口尚未配置，本次结果只保存在当前设备。";
+    if (!API_BASE_URLS.length) return "总榜接口尚未配置，本次结果只保存在当前设备。";
     if (!result) return "准备汇入岛民总榜…";
     if (result.state === "pending") return "正在把本次结果汇入岛民总榜…";
     if (result.state === "failed") {
-      const detail = result.httpStatus ? `HTTP ${result.httpStatus}` : result.errorCode === "network-error" ? "网络请求失败" : "未知错误";
+      const detail = result.httpStatus ? `HTTP ${result.httpStatus}`
+        : result.errorCode === "timeout" ? "请求超时"
+          : result.errorCode === "all-endpoints-failed" ? "所有接口均不可达"
+            : result.errorCode === "network-error" ? "网络请求失败" : "未知错误";
       return `本次结果暂未上传（${detail}）；可点“重新上传结果”重试。`;
     }
     if (result.reviewStatus === "invalid") return "此设备的结果已被人工标记为无效，当前不计入总榜。";
@@ -935,7 +957,7 @@
 
   async function submitCompletedJourney() {
     updateSubmissionStatus();
-    if (!API_BASE_URL || !state?.champion) return;
+    if (!API_BASE_URLS.length || !state?.champion) return;
     const previous = state.submission;
     if (previous?.state === "submitted" && previous.completedAt === state.completedAt) return;
     if (previous?.state === "pending" && Date.now() - Date.parse(previous.attemptedAt || 0) < 30000) return;
@@ -963,24 +985,55 @@
     updateSubmissionStatus();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(result.error || `HTTP ${response.status}`);
-        error.httpStatus = response.status;
-        error.errorCode = result.code || "server-error";
+      const attempts = [];
+      let submitted = null;
+      for (const apiBaseUrl of API_BASE_URLS) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+        const attemptStartedAt = performance.now();
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/submissions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            const error = new Error(result.error || `HTTP ${response.status}`);
+            error.httpStatus = response.status;
+            error.errorCode = result.code || "server-error";
+            throw error;
+          }
+          submitted = { result, apiBaseUrl };
+          break;
+        } catch (error) {
+          attempts.push({
+            origin: new URL(apiBaseUrl).origin,
+            durationMs: Math.round(performance.now() - attemptStartedAt),
+            httpStatus: Number(error.httpStatus) || 0,
+            errorCode: error.name === "AbortError" ? "timeout" : error.errorCode || (error instanceof TypeError ? "network-error" : "client-error"),
+            errorMessage: String(error.message || error).slice(0, 160)
+          });
+          if (Number(error.httpStatus) >= 400 && Number(error.httpStatus) < 500) throw Object.assign(error, { attempts });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      if (!submitted) {
+        const error = new Error("所有提交接口均不可达");
+        error.errorCode = "all-endpoints-failed";
+        error.attempts = attempts;
         throw error;
       }
+      const { result, apiBaseUrl } = submitted;
       state.submission = {
         state: "submitted",
         completedAt,
         reviewStatus: result.reviewStatus,
         replaced: Boolean(result.replaced),
-        submissionId: result.submissionId
+        submissionId: result.submissionId,
+        endpointOrigin: new URL(apiBaseUrl).origin
       };
     } catch (error) {
       console.warn("Leaderboard submission failed", error);
@@ -990,7 +1043,8 @@
         attemptedAt: new Date().toISOString(),
         httpStatus: Number(error.httpStatus) || 0,
         errorCode: error.errorCode || (error instanceof TypeError ? "network-error" : "client-error"),
-        errorMessage: String(error.message || error).slice(0, 240)
+        errorMessage: String(error.message || error).slice(0, 240),
+        attempts: Array.isArray(error.attempts) ? error.attempts : []
       };
     }
     save();
@@ -1086,7 +1140,8 @@
   }
 
   function journeyUrl() {
-    return JOURNEY_URL;
+    const configured = String(window.DAN_ISLAND_CONFIG?.shareUrl || "").trim();
+    return configured || new URL("index.html", location.href).href;
   }
 
   function createJourneyQr() {
@@ -1181,6 +1236,7 @@
     ctx.fillText(catalogBoardSummary(), 315, 351);
 
     const stages = trajectoryStages();
+    const trajectoryIssues = trajectoryIntegrity(stages);
     const boardX = 45;
     const boardY = 375;
     const boardW = 810;
@@ -1236,10 +1292,33 @@
     ctx.fillText(`选择只保存在本机 · 蛋岛环游记 · ${new Date().toLocaleDateString("zh-CN")}`, 45, 1918);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
+    if (!posterBlob) throw new Error("浏览器未能导出 PNG Blob");
+    state.posterDiagnostics = {
+      state: "generated",
+      generatedAt: new Date().toISOString(),
+      blobBytes: posterBlob.size,
+      canvas: `${canvas.width}x${canvas.height}`,
+      stages: stages.map((stage) => ({ label: stage.label, expected: stage.expected, ids: [...stage.ids] })),
+      issues: trajectoryIssues
+    };
+    save();
   }
 
   async function openPoster() {
-    await drawPoster();
+    try {
+      await drawPoster();
+    } catch (error) {
+      console.error("Poster generation failed", error);
+      state.posterDiagnostics = {
+        state: "failed",
+        attemptedAt: new Date().toISOString(),
+        errorName: String(error.name || "Error"),
+        errorMessage: String(error.message || error).slice(0, 240)
+      };
+      save();
+      showToast("结果图生成失败，请打开上传排查并复制报告");
+      return;
+    }
     if (isWeChat) {
       // WeChat blocks Blob downloads and file sharing. A real image element can
       // still be saved or forwarded from its native long-press menu.
@@ -1368,6 +1447,9 @@
       catch { showToast("复制失败，请使用浏览器分享地址"); }
     });
     els.retrySubmission?.addEventListener("click", () => submitCompletedJourney());
+    window.addEventListener("online", () => {
+      if (state?.phase === "complete" && state.submission?.state === "failed") submitCompletedJourney();
+    });
     $("#makePoster").addEventListener("click", openPoster);
     $("#downloadPoster").addEventListener("click", downloadPoster);
     $("#sharePoster").addEventListener("click", sharePoster);

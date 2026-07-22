@@ -1,0 +1,15 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "dan-island-d8gwz7m0v7cc4c765",
+  "functionRoot": "tencent-cloudbase/functions",
+  "functions": [
+    {
+      "name": "dan-island-proxy",
+      "timeout": 20,
+      "memorySize": 128,
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "description": "China-accessible Dan Island ranking API"
+    }
+  ]
+}
