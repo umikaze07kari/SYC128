@@ -165,8 +165,8 @@
   }
 
   function bracketSizeFor(poolSize) {
-    if (poolSize >= 80) return 64;
-    if (poolSize >= 32) return 32;
+    if (poolSize > 96) return 64;
+    if (poolSize > 48) return 32;
     return 16;
   }
 
@@ -922,7 +922,7 @@
     if (result.state === "pending") return "正在把本次结果汇入岛民总榜…";
     if (result.state === "failed") {
       const detail = result.httpStatus ? `HTTP ${result.httpStatus}` : result.errorCode === "network-error" ? "网络请求失败" : "未知错误";
-      return `本次结果暂未上传（${detail}）；可点“重新上传结果”重试，或打开“上传快速排查”。`;
+      return `本次结果暂未上传（${detail}）；可点“重新上传结果”重试。`;
     }
     if (result.reviewStatus === "invalid") return "此设备的结果已被人工标记为无效，当前不计入总榜。";
     if (result.reviewStatus === "suspect") return "结果已收到，因选择速度较快暂不计榜，等待人工复核。";
@@ -998,13 +998,19 @@
     updateSubmissionStatus();
   }
 
+  function catalogBoardSummary() {
+    const counts = { original: 0, ost: 0, stage: 0 };
+    state.catalogIds.map(byId).filter(Boolean).forEach((song) => { counts[boardForSong(song)] += 1; });
+    return `个人作品 ${counts.original} 首 · OST ${counts.ost} 首 · 现场翻唱 ${counts.stage} 首`;
+  }
+
   function renderResult() {
     const winner = byId(state.champion);
     $("#winnerCover").src = winner.cover;
     $("#winnerCover").onerror = () => { $("#winnerCover").src = FALLBACK_COVER; };
     $("#winnerTitle").textContent = winner.title;
     $("#winnerSource").textContent = winner.release;
-    $("#resultPoolCount").textContent = `${state.catalogIds.length} 首 · 完整晋级轨迹`;
+    $("#resultPoolCount").textContent = catalogBoardSummary();
     $("#resultUndo").hidden = !state.history?.length;
     renderTrajectory(els.finalRoute);
     renderQrCode();
@@ -1173,7 +1179,7 @@
     ctx.fillText("完整晋级轨迹", 45, 352);
     ctx.fillStyle = "#708074";
     ctx.font = "14px 'Microsoft YaHei'";
-    ctx.fillText(`${state.firstStageTarget} 强至 Top 1 · 歌名自动换行`, 315, 351);
+    ctx.fillText(catalogBoardSummary(), 315, 351);
 
     const stages = trajectoryStages();
     const boardX = 45;
@@ -1373,12 +1379,20 @@
     const button = $("#musicToggle");
     button.setAttribute("aria-pressed", String(enabled));
     button.setAttribute("aria-label", enabled ? "关闭背景音乐和按钮音效" : "开启背景音乐和按钮音效");
-    $(".music-label", button).textContent = enabled ? "音乐开启" : "音乐关闭";
+    $(".music-label", button).textContent = enabled ? "音乐:开" : "音乐:关";
     showToast(enabled ? "原创舒缓 BGM 已开启" : "音乐与按钮音效已关闭");
+  }
+
+  function answerSoundPrompt(enable) {
+    $("#soundPrompt").close();
+    if (enable) toggleMusic();
   }
 
   function bindEvents() {
     $("#musicToggle").addEventListener("click", toggleMusic);
+    $("#enableSound").addEventListener("click", () => answerSoundPrompt(true));
+    $("#disableSound").addEventListener("click", () => answerSoundPrompt(false));
+    $("#soundPrompt").addEventListener("cancel", () => answerSoundPrompt(false));
     document.addEventListener("click", (event) => {
       if (event.target.closest("button") && !event.target.closest("#musicToggle")) audio?.clickSound();
     });
@@ -1459,6 +1473,7 @@
     renderJourneyConfig();
     bindEvents();
     updateContinue();
+    $("#soundPrompt").showModal();
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 

@@ -158,6 +158,11 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 .music-toggle[aria-pressed="true"] { color:var(--moss-900); background:#f3f8e9; box-shadow:3px 3px 0 #cfc5ed; }
 .music-toggle[aria-pressed="true"] .music-icon { background:var(--moss-600); animation:musicPulse 1.8s ease-in-out infinite; }
 @keyframes musicPulse { 50% { transform:rotate(-8deg) scale(1.08); } }
+.sound-prompt { text-align:center; }
+.sound-prompt .eyebrow { margin-bottom:8px; }
+.sound-prompt > p:not(.eyebrow) { max-width:360px; margin:0 auto; }
+.sound-prompt-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:20px; }
+.sound-prompt-actions button { width:100%; }
 
 .home-view { max-width:760px; margin:0 auto; }
 .island-hero { min-height:0; display:block; padding:44px 0 18px; }
@@ -248,8 +253,7 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 }
 
 @media (max-width: 420px) {
-  .music-label { display:none; }
-  .music-toggle { width:38px; padding:0; justify-content:center; }
+  .music-toggle { padding:0 9px 0 6px; justify-content:center; }
   .music-icon { width:26px; height:26px; }
   .collection-group { padding:8px; }
   .collection-switch span { font-size:8.5px; }
@@ -1058,9 +1062,9 @@ button:active,
   body[data-view="home"] .brand b { font-size:11px; }
   body[data-view="home"] .topbar-actions { gap:5px; }
   body[data-view="home"] .leaderboard-link { min-height:30px; padding:0 9px; font-size:8px; }
-  body[data-view="home"] .music-toggle { width:32px; min-height:32px; padding:0; justify-content:center; }
+  body[data-view="home"] .music-toggle { width:auto; min-height:32px; padding:0 8px 0 5px; justify-content:center; }
   body[data-view="home"] .music-icon { width:23px; height:23px; font-size:12px; }
-  body[data-view="home"] .music-label { display:none; }
+  body[data-view="home"] .music-label { display:inline; }
   body[data-view="home"] .round-icon { width:32px; height:32px; }
   body[data-view="home"] .island-hero { padding:3px 0 0; }
   body[data-view="home"] .eyebrow { margin-bottom:4px; font-size:7px; }

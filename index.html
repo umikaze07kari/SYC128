@@ -22,7 +22,7 @@
     <div class="topbar-actions">
       <a class="leaderboard-link" href="leaderboard.html">总榜</a>
       <button class="music-toggle" id="musicToggle" type="button" aria-label="开启背景音乐和按钮音效" aria-pressed="false">
-        <span class="music-icon" aria-hidden="true">♪</span><span class="music-label">音乐关闭</span>
+        <span class="music-icon" aria-hidden="true">♪</span><span class="music-label">音乐:关</span>
       </button>
       <button class="round-icon" id="openAbout" type="button" aria-label="查看赛制">?</button>
     </div>
@@ -114,7 +114,7 @@
       </div>
 
       <div class="route-card final-route-card">
-        <div class="route-card-head"><b>完整晋级轨迹</b><small id="resultPoolCount">完整记录每轮晋级</small></div>
+        <div class="route-card-head"><b>完整晋级轨迹</b><small id="resultPoolCount">个人作品 0 首 · OST 0 首 · 现场翻唱 0 首</small></div>
         <div class="island-route" id="finalRoute"></div>
       </div>
 
@@ -125,7 +125,6 @@
           <button class="soft-button" id="resultUndo" type="button">↶ 撤回决选</button>
           <button class="soft-button" id="copyJourneyLink" type="button">复制测试链接</button>
           <button class="soft-button" id="retrySubmission" type="button">重新上传结果</button>
-          <a class="soft-button result-link-button" href="diagnostics.html">上传快速排查</a>
           <button class="soft-button" id="restartJourney" type="button">再测一次</button>
         </div>
         <aside class="invite-card">
@@ -140,6 +139,16 @@
     </section>
   </main>
 
+  <dialog class="modal sound-prompt" id="soundPrompt" aria-labelledby="soundPromptTitle" aria-describedby="soundPromptCopy">
+    <p class="eyebrow">SOUND ON?</p>
+    <h2 id="soundPromptTitle">是否开启音效？</h2>
+    <p id="soundPromptCopy">开启后会播放舒缓的背景音乐和按钮音效，你也可以随时通过右上角按钮关闭。</p>
+    <div class="sound-prompt-actions">
+      <button class="primary-button" id="enableSound" type="button">开启音效</button>
+      <button class="soft-button" id="disableSound" type="button">暂不开启</button>
+    </div>
+  </dialog>
+
   <dialog class="modal" id="aboutDialog">
     <button class="modal-close" data-close-about type="button">×</button>
     <p class="eyebrow">ISLAND RULES</p>
@@ -148,7 +157,7 @@
       <li><b>出发配置：</b>个人作品、OST、现场翻唱三个板块可自由多选，也可以只玩其中一个。</li>
       <li><b>登岛海选：</b>根据本次曲目数量自动编成若干组四选一；选择用时只影响后续同组内的上下位置。</li>
       <li><b>熟悉度配对：</b>同节目、同类作品优先内部相遇，让跨板块决战尽量留到后段。</li>
-      <li><b>动态赛制：</b>小曲库从十六强开始，常规曲库进入三十二强，超大曲库从六十四强启程。</li>
+      <li><b>动态赛制：</b>不超过 48 首从十六强开始，49–96 首从三十二强开始，超过 96 首从六十四强启程。</li>
       <li><b>双歌对决：</b>每轮两两选择直至 Top 1；十六进八后可从本轮遗珠中选一首发起八强复活挑战。</li>
       <li><b>挚爱决选：</b>最后一次二选一，选出你心里的 Top 1。</li>
     </ol>
