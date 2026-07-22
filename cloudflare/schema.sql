@@ -42,8 +42,25 @@ CREATE TABLE IF NOT EXISTS submission_attempts (
   received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS submission_scopes (
+  submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  board TEXT NOT NULL CHECK (board IN ('overall', 'original', 'ost', 'stage')),
+  PRIMARY KEY (submission_id, board)
+);
+
+CREATE TABLE IF NOT EXISTS submission_scores (
+  submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  song_id TEXT NOT NULL,
+  board TEXT NOT NULL CHECK (board IN ('overall', 'original', 'ost', 'stage')),
+  normalized_points REAL NOT NULL,
+  is_top1 INTEGER NOT NULL DEFAULT 0 CHECK (is_top1 IN (0, 1)),
+  PRIMARY KEY (submission_id, song_id, board)
+);
+
 CREATE INDEX IF NOT EXISTS idx_submission_status ON submissions(auto_status, review_status);
 CREATE INDEX IF NOT EXISTS idx_submission_updated ON submissions(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_items_song ON submission_items(song_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_submission ON submission_attempts(submission_id, received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scopes_board ON submission_scopes(board, submission_id);
+CREATE INDEX IF NOT EXISTS idx_scores_board_song ON submission_scores(board, song_id);
 

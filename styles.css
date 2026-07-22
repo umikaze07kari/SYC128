@@ -1298,3 +1298,28 @@ button:active,
   }
   body[data-view="result"] .result-actions .primary-button span { margin-left:3px; }
 }
+/* Three independent ranking scopes on the launch screen. */
+.board-toggles { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.board-switch { position:relative; min-width:0; cursor:pointer; }
+.board-switch input { position:absolute; opacity:0; pointer-events:none; }
+.board-switch > .board-copy { min-height:104px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; padding:13px 12px 12px 34px; border:1px solid rgba(62,82,66,.13); border-radius:9px 13px 8px 11px; color:#667068; background:rgba(238,240,235,.88); transition:transform .18s,background .18s,border-color .18s,box-shadow .18s; }
+.board-switch:nth-child(2) > .board-copy { transform:rotate(-.25deg); }
+.board-switch:nth-child(3) > .board-copy { transform:rotate(.2deg); }
+.board-copy small { color:#7e748e; font:800 8px ui-monospace,Consolas,monospace; letter-spacing:.08em; }
+.board-copy b { color:#455049; font-size:13px; }
+.board-copy em { color:#8a908b; font-size:8px; font-style:normal; line-height:1.35; }
+.board-check { position:absolute; z-index:1; top:50%; left:11px; width:15px; height:15px; display:grid; place-items:center; border:1.5px solid #a8afaa; border-radius:50%; transform:translateY(-50%); color:#fff; font-size:9px; }
+.board-switch input:checked ~ .board-copy { border-color:rgba(86,120,72,.28); color:#2e4935; background:#e6f0d6; box-shadow:3px 3px 0 rgba(185,175,225,.28); }
+.board-switch input:checked ~ .board-copy b { color:#293f30; }
+.board-switch input:checked ~ .board-check { border-color:#66549b; background:#7560b5; }
+.board-switch input:checked ~ .board-check::before { content:"✓"; }
+.primary-button:disabled { cursor:not-allowed; opacity:.48; filter:grayscale(.35); }
+.leaderboard-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 4px; }
+.leaderboard-tab { padding:8px 12px; border:1px solid rgba(68,91,72,.14); border-radius:999px; color:#657068; background:rgba(255,255,255,.68); font:800 11px inherit; cursor:pointer; }
+.leaderboard-tab[aria-selected="true"] { border-color:#607d55; color:#fff; background:#607d55; box-shadow:2px 2px 0 #d8d1ff; }
+@media (max-width:700px) {
+  .board-toggles { grid-template-columns:1fr; }
+  .board-switch > .board-copy { min-height:72px; }
+  .leaderboard-tabs { display:grid; grid-template-columns:1fr 1fr; }
+  .leaderboard-tab { padding:9px 7px; font-size:10px; }
+}

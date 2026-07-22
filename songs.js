@@ -93,7 +93,7 @@ const rawSongs = [
   ["si-nian", "思念", "live", "solo", "情绪", "晚会舞台", 79],
   ["xin-huo", "心火", "live", "collab", "情绪", "晚会舞台", 78],
   ["cheng-shi-zhi-guang", "城市之光", "live", "solo", "明亮", "晚会舞台", 76],
-  ["ni-jiu-bu-yao-xiang-qi-wo", "你就不要想起我", "live", "solo", "抒情", "晚会舞台", 83]
+  ["ni-jiu-bu-yao-xiang-qi-wo", "你就不要想起我", "live", "solo", "抒情", "晚会舞台", 83],
   ["dong-bei-min-yao", "东北民谣", "live", "collab", "叙事", "晚会舞台", 80],
   ["tian-tian", "天天", "live", "collab", "轻快", "晚会舞台", 79],
   ["xiang-si", "相思", "live", "collab", "国风", "晚会舞台", 78],

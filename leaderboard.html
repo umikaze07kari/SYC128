@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#557c45">
-  <meta name="description" content="蛋岛环游记岛民总榜，展示所有有效测试结果加权后的前 50 首歌曲。">
-  <title>岛民总榜 · 蛋岛环游记</title>
+  <meta name="description" content="蛋岛环游记岛民榜单，包含个人作品、OST、现场翻唱三个分榜及总榜。">
+  <title>岛民榜单 · 蛋岛环游记</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -22,9 +22,15 @@
 
   <main class="leaderboard-main">
     <header class="leaderboard-hero">
-      <p class="eyebrow">ISLANDERS' TOP 50</p>
-      <h1>岛民总榜</h1>
-      <p>汇集所有有效环游结果。晋级越深，获得的权重越高；同一淘汰轮次按并列名次计算。</p>
+      <p class="eyebrow" id="leaderboardEyebrow">ISLANDERS' OVERALL</p>
+      <h1 id="leaderboardHeading">岛民总榜</h1>
+      <p id="leaderboardIntro">三个分榜汇入同一张总榜。每份结果先归一化，选择更多板块不会获得额外票权。</p>
+      <nav class="leaderboard-tabs" aria-label="切换榜单" role="tablist">
+        <button class="leaderboard-tab" type="button" role="tab" data-board="overall" aria-selected="true">总榜</button>
+        <button class="leaderboard-tab" type="button" role="tab" data-board="original" aria-selected="false">个人作品榜</button>
+        <button class="leaderboard-tab" type="button" role="tab" data-board="ost" aria-selected="false">OST 榜</button>
+        <button class="leaderboard-tab" type="button" role="tab" data-board="stage" aria-selected="false">现场翻唱榜</button>
+      </nav>
       <div class="leaderboard-stats" id="leaderboardStats" aria-live="polite"><span>正在连接岛屿电台…</span></div>
     </header>
 
@@ -40,7 +46,7 @@
 
     <aside class="weight-note">
       <b>计分方式</b>
-      <p>Top 1 / 亚军 / 四强 / 八强 / 十六强 / 三十二强分别获得 100 / 70 / 45 / 28 / 16 / 8 分。同一设备只保留一份当前结果；过快提交会暂时排除，待人工复核。</p>
+      <p>Top 1 / 亚军 / 四强 / 八强 / 十六强 / 三十二强的基础分为 100 / 70 / 45 / 28 / 16 / 8。每份结果会在总榜和所选分榜内分别归一化为 100 个偏爱点，榜上展示有效参与者的平均偏爱指数。同一设备只保留一份当前结果；过快提交会暂时排除，待人工复核。</p>
     </aside>
   </main>
 

@@ -2,8 +2,8 @@
   "use strict";
 
   const songs = window.SONG_CATALOG || [];
-  const STORAGE_KEY = "dan-island-odyssey-v13";
-  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
+  const STORAGE_KEY = "dan-island-odyssey-v14";
+  const LEGACY_STORAGE_KEYS = ["dan-island-odyssey-v13", "dan-island-odyssey-v12", "dan-island-odyssey-v11", "dan-island-odyssey-v10", "dan-island-odyssey-v9"];
   const FALLBACK_COVER = "assets/cover-fallback.svg";
   const JOURNEY_URL = "https://umikaze07kari.github.io/SYC128";
   const DEVICE_KEY = "dan-island-anonymous-device-v1";
@@ -12,28 +12,13 @@
   const BASE_LANDING_QUALIFIERS = 24;
   const MAX_REVIVAL_SLOTS = 5;
   const MIN_LANDING_QUALIFIERS = 32 - MAX_REVIVAL_SLOTS;
-  const OPTIONAL_COLLECTIONS = [
-    { key: "ost", group: "stage", label: "影视原声", match: (song) => song.source === "ost" },
-    { key: "voice2020", group: "classic", label: "2020中国好声音", match: (song) => song.release.includes("2020中国好声音") },
-    { key: "singer2025", group: "classic", label: "歌手2025", match: (song) => song.release.includes("歌手2025") },
-    { key: "burstStage", group: "classic", label: "爆裂舞台", match: (song) => song.release.includes("爆裂舞台") },
-    { key: "infinitySound", group: "classic", label: "声生不息·港乐季", match: (song) => song.release.includes("声生不息·港乐季") },
-    { key: "dramaSongs", group: "classic", label: "剧好听的歌", match: (song) => song.release.includes("剧好听的歌") },
-    { key: "chinaMusic", group: "classic", label: "国乐无双", match: (song) => song.release.includes("国乐无双") },
-    { key: "concert", group: "stage", label: "演唱会", match: (song) => song.release === "演唱会" },
-    { key: "giftedVoice", group: "other", label: "天赐的声音", match: (song) => song.release.includes("天赐的声音") },
-    { key: "praiseSong", group: "other", label: "为歌而赞", match: (song) => song.release.includes("为歌而赞") },
-    { key: "rapListen", group: "other", label: "说唱听我的", match: (song) => song.release.includes("说唱听我的") },
-    { key: "ourSong", group: "other", label: "我们的歌", match: (song) => song.release.includes("我们的歌") },
-    { key: "musicPlan", group: "other", label: "音乐缘计划", match: (song) => song.release.includes("音乐缘计划") },
-    { key: "gala", group: "stage", label: "晚会舞台", match: (song) => song.release === "晚会舞台" }
+  const BOARD_OPTIONS = [
+    { key: "original", number: "01", title: "个人作品榜", description: "个人专辑与个人单曲", match: (song) => song.source === "album" || song.source === "single" },
+    { key: "ost", number: "02", title: "OST 榜", description: "影视、游戏与节目原声", match: (song) => song.source === "ost" },
+    { key: "stage", number: "03", title: "现场翻唱榜", description: "音综、晚会舞台与演唱会翻唱", match: (song) => ["live", "variety", "other"].includes(song.source) }
   ];
-  const COLLECTION_GROUPS = [
-    { key: "stage", title: "影视与舞台", note: "三类平级，可分别开关" },
-    { key: "classic", title: "经典音乐综艺", note: "熟悉舞台" },
-    { key: "other", title: "其他音乐综艺", note: "更多现场" }
-  ];
-  const DEFAULT_COLLECTIONS = ["ost", "voice2020", "singer2025", "burstStage", "infinitySound", "dramaSongs", "chinaMusic", "concert"];
+  const DEFAULT_BOARDS = BOARD_OPTIONS.map((board) => board.key);
+  const boardForSong = (song) => BOARD_OPTIONS.find((board) => board.match(song))?.key || "stage";
   const ROUND_LABELS = {
     duel32: "三十二进十六",
     duel16: "十六进八",
@@ -52,6 +37,7 @@
     continueJourney: $("#continueJourney"),
     collectionToggles: $("#collectionToggles"),
     selectedSongCount: $("#selectedSongCount"),
+    startJourney: $("#startJourney"),
     stageEnglish: $("#stageEnglish"),
     stageTitle: $("#stageTitle"),
     stageCounter: $("#stageCounter"),
@@ -186,28 +172,24 @@
   function readJourneyConfig() {
     return {
       includeCollabs: $('input[name="vocalScope"]:checked')?.value !== "solo",
-      collections: $$('#collectionToggles input:checked').map((input) => input.value)
+      boards: $$('#collectionToggles input:checked').map((input) => input.value)
     };
   }
 
   function songsForConfig(config) {
-    const enabled = new Set(config.collections);
-    return songs.filter((song) => {
-      const core = song.source === "album" || song.source === "single";
-      const optional = OPTIONAL_COLLECTIONS.some((collection) => enabled.has(collection.key) && collection.match(song));
-      return (core || optional) && (config.includeCollabs || song.vocal !== "collab");
-    });
+    const enabled = new Set(config.boards || []);
+    return songs.filter((song) => enabled.has(boardForSong(song)) && (config.includeCollabs || song.vocal !== "collab"));
   }
 
   function renderJourneyConfig(config = null) {
-    const enabled = new Set(config?.collections || DEFAULT_COLLECTIONS);
-    els.collectionToggles.innerHTML = COLLECTION_GROUPS.map((group) => {
-      const items = OPTIONAL_COLLECTIONS.filter((collection) => collection.group === group.key);
-      return `<section class="collection-group collection-group-${group.key}">
-        <div class="collection-group-head"><b>${group.title}</b><small>${group.note}</small></div>
-        <div class="collection-options">${items.map((collection) => `
-          <label class="collection-switch"><input type="checkbox" value="${collection.key}" ${enabled.has(collection.key) ? "checked" : ""}><span>${collection.label}</span></label>`).join("")}</div>
-      </section>`;
+    const enabled = new Set(config?.boards || DEFAULT_BOARDS);
+    els.collectionToggles.innerHTML = BOARD_OPTIONS.map((board) => {
+      const count = songs.filter((song) => board.match(song)).length;
+      return `<label class="board-switch board-${board.key}">
+        <input type="checkbox" value="${board.key}" ${enabled.has(board.key) ? "checked" : ""}>
+        <span class="board-check" aria-hidden="true"></span>
+        <span class="board-copy"><small>${board.number} / ${count} 首</small><b>${board.title}</b><em>${board.description}</em></span>
+      </label>`;
     }).join("");
     const vocal = config?.includeCollabs === false ? "solo" : "all";
     $(`input[name="vocalScope"][value="${vocal}"]`).checked = true;
@@ -215,8 +197,12 @@
   }
 
   function updateSelectedCount() {
-    const count = songsForConfig(readJourneyConfig()).length;
+    const config = readJourneyConfig();
+    const count = songsForConfig(config).length;
     els.selectedSongCount.textContent = `${count} 首`;
+    const canStart = config.boards.length > 0;
+    els.startJourney.disabled = !canStart;
+    els.startJourney.title = canStart ? "" : "请至少选择一个板块";
   }
 
   function firstRoundSpeed(id) {
@@ -246,7 +232,7 @@
   function freshState(pool, config) {
     const { directSeeds, groups } = makeLandingGroups(pool);
     return {
-      version: 13,
+      version: 14,
       journeyId: journeyId(),
       createdAt: new Date().toISOString(),
       catalogIds: pool.map((song) => song.id),
@@ -296,7 +282,7 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
       const saved = JSON.parse(raw);
-      if (saved?.version === 13) return saved;
+      if (saved?.version === 14) return saved;
       return null;
     } catch {
       return null;
@@ -379,6 +365,8 @@
   function startJourney() {
     const config = readJourneyConfig();
     const pool = songsForConfig(config);
+    if (!config.boards.length) return showToast("请至少选择一个喜欢的板块");
+    if (pool.length < 32) return showToast("当前范围不足 32 首，请包含合唱或增加一个板块");
     state = freshState(pool, config);
     save();
     renderCurrent();
@@ -852,7 +840,7 @@
     const completedAt = state.completedAt || new Date().toISOString();
     const startedAt = state.createdAt || completedAt;
     const payload = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       clientVersion: state.version,
       deviceId: anonymousDeviceId(),
       journeyId: state.journeyId || journeyId(),
@@ -861,7 +849,7 @@
       durationMs: Math.max(0, Date.parse(completedAt) - Date.parse(startedAt)),
       catalogSize: state.catalogIds.length,
       config: state.config,
-      placements: placementRows(),
+      placements: placementRows().map((item) => ({ ...item, board: boardForSong(byId(item.songId)) })),
       events
     };
     state.journeyId = payload.journeyId;

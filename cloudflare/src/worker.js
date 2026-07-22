@@ -6,6 +6,7 @@ const SCORE_BY_TIER = Object.freeze({
   top16: 16,
   top32: 8
 });
+const ALLOWED_BOARDS = new Set(["overall", "original", "ost", "stage"]);
 
 export default {
   async fetch(request, env) {
@@ -17,7 +18,7 @@ export default {
       let response;
       if (request.method === "POST" && url.pathname === "/api/submissions") response = await submit(request, env);
       else if (request.method === "GET" && url.pathname === "/api/health") response = await health(env);
-      else if (request.method === "GET" && url.pathname === "/api/leaderboard") response = await leaderboard(env);
+      else if (request.method === "GET" && url.pathname === "/api/leaderboard") response = await leaderboard(env, url.searchParams.get("board") || "overall");
       else if (url.pathname === "/api/admin/submissions" && request.method === "GET") response = await adminList(request, env);
       else if (/^\/api\/admin\/submissions\/\d+$/.test(url.pathname) && request.method === "GET") response = await adminDetail(request, env, Number(url.pathname.split("/").pop()));
       else if (/^\/api\/admin\/submissions\/\d+$/.test(url.pathname) && request.method === "PATCH") response = await adminUpdate(request, env, Number(url.pathname.split("/").pop()));
@@ -78,7 +79,7 @@ function validIso(value, name) {
 }
 
 function validateSubmission(body) {
-  if (!body || body.schemaVersion !== 1) throw new PublicError("Unsupported submission schema");
+  if (!body || ![1, 2].includes(body.schemaVersion)) throw new PublicError("Unsupported submission schema");
   const deviceId = cleanId(body.deviceId, "deviceId", 200);
   const journeyId = cleanId(body.journeyId, "journeyId", 200);
   const startedAt = validIso(body.startedAt, "startedAt");
@@ -101,7 +102,9 @@ function validateSubmission(body) {
     const rankStart = Math.round(Number(item.rankStart));
     const rankEnd = Math.round(Number(item.rankEnd));
     if (rankStart < 1 || rankEnd < rankStart || rankEnd > 32) throw new PublicError("Invalid placement rank");
-    return { songId, tier, rankStart, rankEnd, points: SCORE_BY_TIER[tier] };
+    const board = body.schemaVersion === 2 ? String(item?.board || "") : "overall";
+    if (body.schemaVersion === 2 && (!ALLOWED_BOARDS.has(board) || board === "overall")) throw new PublicError("Invalid placement board");
+    return { songId, tier, rankStart, rankEnd, points: SCORE_BY_TIER[tier], board };
   });
   const expected = { champion: 1, finalist: 1, top4: 2, top8: 4, top16: 8, top32: 16 };
   if (Object.entries(expected).some(([tier, count]) => tierCounts[tier] !== count)) throw new PublicError("Invalid placement distribution");
@@ -114,7 +117,40 @@ function validateSubmission(body) {
     elapsedMs: Math.max(0, Math.min(24 * 3600 * 1000, Math.round(Number(event?.elapsedMs) || 0))),
     journeyElapsedMs: Math.max(0, Math.min(30 * 24 * 3600 * 1000, Math.round(Number(event?.journeyElapsedMs) || 0)))
   })) : [];
-  return { ...body, deviceId, journeyId, startedAt, completedAt, durationMs, catalogSize, placements, events };
+  const requestedBoards = body.schemaVersion === 2 && Array.isArray(body.config?.boards) ? body.config.boards : [];
+  const boards = [...new Set(requestedBoards.map(String))];
+  if (boards.some((board) => !ALLOWED_BOARDS.has(board) || board === "overall")) throw new PublicError("Invalid board selection");
+  if (body.schemaVersion === 2 && !boards.length) throw new PublicError("At least one board is required");
+  if (body.schemaVersion === 2 && placements.some((item) => !boards.includes(item.board))) throw new PublicError("Placement outside selected boards");
+  return { ...body, deviceId, journeyId, startedAt, completedAt, durationMs, catalogSize, config: { ...(body.config || {}), boards }, placements, events };
+}
+
+function normalizedScoreRows(payload) {
+  const scopes = ["overall"];
+  const rows = [];
+  const addScope = (board, items) => {
+    const total = items.reduce((sum, item) => sum + item.points, 0);
+    if (!total) return false;
+    const highest = Math.max(...items.map((item) => item.points));
+    items.forEach((item) => rows.push({
+      songId: item.songId,
+      board,
+      points: item.points / total * 1000,
+      top1: item.points === highest ? 1 : 0
+    }));
+    return true;
+  };
+  addScope("overall", payload.placements);
+  (payload.config?.boards || []).forEach((board) => {
+    if (addScope(board, payload.placements.filter((item) => item.board === board))) scopes.push(board);
+  });
+  return { scopes, rows };
+}
+
+function chunks(items, size) {
+  const result = [];
+  for (let index = 0; index < items.length; index += size) result.push(items.slice(index, index + size));
+  return result;
 }
 
 function median(numbers) {
@@ -129,9 +165,11 @@ function auditSubmission(payload, env) {
   const fastThreshold = Number(env.FAST_DECISION_MS || 350);
   const fastCount = durations.filter((value) => value < fastThreshold).length;
   const fastRatio = durations.length ? fastCount / durations.length : 1;
+  const configuredMinimum = Number(env.MIN_DECISIONS || 40);
+  const minimumDecisions = payload.catalogSize < 50 ? Math.min(configuredMinimum, 34) : configuredMinimum;
   const flags = [];
   if (payload.durationMs < Number(env.MIN_DURATION_MS || 60000)) flags.push("total-too-fast");
-  if (durations.length < Number(env.MIN_DECISIONS || 40)) flags.push("too-few-decision-records");
+  if (durations.length < minimumDecisions) flags.push("too-few-decision-records");
   if (fastRatio > Number(env.MAX_FAST_RATIO || .45)) flags.push("too-many-fast-decisions");
   if (durations.length && median(durations) < fastThreshold) flags.push("median-decision-too-fast");
   return { status: flags.length ? "suspect" : "valid", flags, choiceCount: durations.length, medianChoiceMs: median(durations), fastChoiceCount: fastCount };
@@ -165,9 +203,18 @@ async function submit(request, env) {
   await env.DB.prepare(`INSERT INTO submission_attempts (submission_id, device_key, journey_id, duration_ms, auto_status, auto_flags, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?)`)
     .bind(submissionId, deviceKey, payload.journeyId, payload.durationMs, audit.status, flagsJson, storedPayload).run();
 
-  const statements = [env.DB.prepare("DELETE FROM submission_items WHERE submission_id = ?").bind(submissionId)];
-  payload.placements.forEach((item) => statements.push(env.DB.prepare(`INSERT INTO submission_items (submission_id, song_id, tier, rank_start, rank_end, points) VALUES (?, ?, ?, ?, ?, ?)`)
-    .bind(submissionId, item.songId, item.tier, item.rankStart, item.rankEnd, item.points)));
+  const scoreData = normalizedScoreRows(payload);
+  const statements = [
+    env.DB.prepare("DELETE FROM submission_items WHERE submission_id = ?").bind(submissionId),
+    env.DB.prepare("DELETE FROM submission_scores WHERE submission_id = ?").bind(submissionId),
+    env.DB.prepare("DELETE FROM submission_scopes WHERE submission_id = ?").bind(submissionId)
+  ];
+  chunks(payload.placements, 15).forEach((items) => statements.push(env.DB.prepare(`INSERT INTO submission_items (submission_id, song_id, tier, rank_start, rank_end, points) VALUES ${items.map(() => "(?, ?, ?, ?, ?, ?)").join(",")}`)
+    .bind(...items.flatMap((item) => [submissionId, item.songId, item.tier, item.rankStart, item.rankEnd, item.points]))));
+  statements.push(env.DB.prepare(`INSERT INTO submission_scopes (submission_id, board) VALUES ${scoreData.scopes.map(() => "(?, ?)").join(",")}`)
+    .bind(...scoreData.scopes.flatMap((board) => [submissionId, board])));
+  chunks(scoreData.rows, 15).forEach((items) => statements.push(env.DB.prepare(`INSERT INTO submission_scores (submission_id, song_id, board, normalized_points, is_top1) VALUES ${items.map(() => "(?, ?, ?, ?, ?)").join(",")}`)
+    .bind(...items.flatMap((item) => [submissionId, item.songId, item.board, item.points, item.top1]))));
   await env.DB.batch(statements);
 
   return json({ ok: true, submissionId, replaced: Boolean(existing), reviewStatus: audit.status });
@@ -185,7 +232,7 @@ async function health(env) {
     try {
       await env.DB.prepare("SELECT 1 AS ok").first();
       checks.database.ok = true;
-      const required = ["submissions", "submission_items", "submission_attempts"];
+      const required = ["submissions", "submission_items", "submission_attempts", "submission_scores", "submission_scopes"];
       const placeholders = required.map(() => "?").join(",");
       const result = await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`).bind(...required).all();
       const present = new Set((result.results || []).map((row) => row.name));
@@ -199,14 +246,16 @@ async function health(env) {
   return json({ ok, service: "dan-island-ranking-api", checks, generatedAt: new Date().toISOString() }, ok ? 200 : 503);
 }
 
-async function leaderboard(env) {
+async function leaderboard(env, board = "overall") {
+  if (!ALLOWED_BOARDS.has(board)) throw new PublicError("Invalid leaderboard board");
   const effective = `(s.review_status = 'valid' OR (s.review_status IS NULL AND s.auto_status = 'valid'))`;
-  const [ranking, counts] = await Promise.all([
-    env.DB.prepare(`SELECT i.song_id AS songId, SUM(i.points) AS score, SUM(CASE WHEN i.tier='champion' THEN 1 ELSE 0 END) AS top1Count, COUNT(*) AS supportCount FROM submission_items i JOIN submissions s ON s.id=i.submission_id WHERE ${effective} GROUP BY i.song_id ORDER BY score DESC, top1Count DESC, supportCount DESC, i.song_id ASC LIMIT 50`).all(),
-    env.DB.prepare(`SELECT SUM(CASE WHEN ${effective} THEN 1 ELSE 0 END) AS validSubmissions, SUM(CASE WHEN s.review_status IS NULL AND s.auto_status='suspect' THEN 1 ELSE 0 END) AS pendingReview FROM submissions s`).first()
+  const [ranking, counts, eligible] = await Promise.all([
+    env.DB.prepare(`SELECT sc.song_id AS songId, ROUND(SUM(sc.normalized_points) / NULLIF((SELECT COUNT(*) FROM submission_scopes ss JOIN submissions es ON es.id=ss.submission_id WHERE ss.board=? AND (es.review_status='valid' OR (es.review_status IS NULL AND es.auto_status='valid'))), 0) / 10, 2) AS score, SUM(sc.is_top1) AS top1Count, COUNT(*) AS supportCount FROM submission_scores sc JOIN submissions s ON s.id=sc.submission_id WHERE sc.board=? AND ${effective} GROUP BY sc.song_id ORDER BY score DESC, top1Count DESC, supportCount DESC, sc.song_id ASC LIMIT 50`).bind(board, board).all(),
+    env.DB.prepare(`SELECT SUM(CASE WHEN ${effective} THEN 1 ELSE 0 END) AS validSubmissions, SUM(CASE WHEN s.review_status IS NULL AND s.auto_status='suspect' THEN 1 ELSE 0 END) AS pendingReview FROM submissions s`).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS count FROM submission_scopes ss JOIN submissions s ON s.id=ss.submission_id WHERE ss.board=? AND ${effective}`).bind(board).first()
   ]);
   const entries = (ranking.results || []).map((row, index) => ({ rank: index + 1, songId: row.songId, score: Number(row.score), top1Count: Number(row.top1Count), supportCount: Number(row.supportCount) }));
-  return json({ entries, validSubmissions: Number(counts?.validSubmissions || 0), pendingReview: Number(counts?.pendingReview || 0), generatedAt: new Date().toISOString() });
+  return json({ board, entries, eligibleSubmissions: Number(eligible?.count || 0), validSubmissions: Number(counts?.validSubmissions || 0), pendingReview: Number(counts?.pendingReview || 0), generatedAt: new Date().toISOString() });
 }
 
 function requireAdmin(request, env) {
