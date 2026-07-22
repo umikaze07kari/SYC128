@@ -89,6 +89,8 @@
     posterImage: $("#resultPosterImage"),
     posterSaveHint: $("#posterSaveHint"),
     resultQr: $("#resultQr"),
+    discoveryGrid: $("#discoveryGrid"),
+    discoveryProfile: $("#discoveryProfile"),
     submissionStatus: $("#submissionStatus"),
     retrySubmission: $("#retrySubmission"),
     toast: $("#toast")
@@ -1057,6 +1059,78 @@
     return `个人作品 ${counts.original} 首 · OST ${counts.ost} 首 · 现场翻唱 ${counts.stage} 首`;
   }
 
+  function ensureDiscovery() {
+    state.discovery ||= { recommendationIds: [], heardIds: [], likedIds: [], dislikedIds: [], generatedAt: null };
+    const recommender = window.DAN_ISLAND_RECOMMENDER;
+    if (!recommender) return [];
+    const validIds = state.discovery.recommendationIds.filter((id) => byId(id));
+    if (validIds.length < 3) {
+      const additions = recommender.recommend(songs, state, { limit: 3 - validIds.length, excludeIds: validIds });
+      state.discovery.recommendationIds = [...validIds, ...additions.map((item) => item.id)];
+      state.discovery.generatedAt ||= new Date().toISOString();
+      save();
+    }
+    return recommender.describe(songs, state, state.discovery.recommendationIds);
+  }
+
+  function musicSearchUrl(platform, song) {
+    const query = encodeURIComponent(`单依纯 ${song.title}`);
+    if (platform === "netease") return `https://music.163.com/#/search/m/?s=${query}&type=1`;
+    return `https://y.qq.com/n/ryqq/search?w=${query}&t=song&remoteplace=txt.yqq.top`;
+  }
+
+  function renderDiscovery() {
+    const recommendations = ensureDiscovery();
+    const liked = new Set(state.discovery?.likedIds || []);
+    const profile = window.DAN_ISLAND_RECOMMENDER?.profile(songs, state) || [];
+    els.discoveryProfile.textContent = profile.length
+      ? `你的偏爱坐标：${profile.join(" · ")}`
+      : "根据这一路的选择生成";
+    els.discoveryGrid.innerHTML = recommendations.map((recommendation, index) => {
+      const song = byId(recommendation.id);
+      const isLiked = liked.has(song.id);
+      return `<article class="discovery-card" data-recommendation-id="${song.id}">
+        <div class="discovery-card-top">
+          <div class="discovery-cover">${imageMarkup(song)}</div>
+          <div class="discovery-song-copy"><span>0${index + 1} · ${recommendation.label}</span><h3>${song.title}</h3><small>${song.release}</small></div>
+        </div>
+        <p>${recommendation.reason}</p>
+        <div class="discovery-links">
+          <a href="${musicSearchUrl("netease", song)}" target="_blank" rel="noreferrer">网易云搜索 ↗</a>
+          <a href="${musicSearchUrl("qq", song)}" target="_blank" rel="noreferrer">QQ音乐搜索 ↗</a>
+        </div>
+        <div class="discovery-feedback">
+          <button class="${isLiked ? "selected" : ""}" type="button" data-discovery-action="like" data-song-id="${song.id}" aria-pressed="${isLiked}">${isLiked ? "♥ 已种草" : "♡ 喜欢"}</button>
+          <button type="button" data-discovery-action="replace" data-song-id="${song.id}">听过了，换一首</button>
+        </div>
+      </article>`;
+    }).join("");
+  }
+
+  function handleDiscoveryFeedback(action, songId) {
+    const discovery = state.discovery;
+    if (!discovery || !discovery.recommendationIds.includes(songId)) return;
+    if (action === "like") {
+      const liked = new Set(discovery.likedIds || []);
+      if (liked.has(songId)) liked.delete(songId);
+      else liked.add(songId);
+      discovery.likedIds = [...liked];
+      save();
+      renderDiscovery();
+      showToast(liked.has(songId) ? "已把这首遗珠种进歌单" : "已取消喜欢标记");
+      return;
+    }
+    discovery.heardIds = [...new Set([...(discovery.heardIds || []), songId])];
+    const index = discovery.recommendationIds.indexOf(songId);
+    const keep = discovery.recommendationIds.filter((id) => id !== songId);
+    const replacement = window.DAN_ISLAND_RECOMMENDER.recommend(songs, state, { limit: 1, excludeIds: keep })[0];
+    if (replacement) discovery.recommendationIds.splice(index, 1, replacement.id);
+    else discovery.recommendationIds.splice(index, 1);
+    save();
+    renderDiscovery();
+    showToast(replacement ? "潮水又送来一首遗珠" : "暂时没有更多匹配歌曲了");
+  }
+
   function renderResult() {
     const winner = byId(state.champion);
     $("#winnerCover").src = winner.cover;
@@ -1066,6 +1140,7 @@
     $("#resultPoolCount").textContent = catalogBoardSummary();
     $("#resultUndo").hidden = !state.history?.length;
     renderTrajectory(els.finalRoute);
+    renderDiscovery();
     renderQrCode();
     showView("result");
     updateContinue();
@@ -1178,11 +1253,17 @@
     const canvas = els.canvas;
     const ctx = canvas.getContext("2d");
     const W = 900;
-    const H = 1950;
+    const H = 2320;
     canvas.width = W;
     canvas.height = H;
     const winner = byId(state.champion);
-    const [island, cover] = await Promise.all([loadImage("assets/island.svg"), loadImage(winner.cover)]);
+    const recommendations = ensureDiscovery();
+    const recommendationSongs = recommendations.map((item) => byId(item.id)).filter(Boolean);
+    const [island, cover, ...recommendationCovers] = await Promise.all([
+      loadImage("assets/island.svg"),
+      loadImage(winner.cover),
+      ...recommendationSongs.map((song) => loadImage(song.cover))
+    ]);
 
     const background = ctx.createLinearGradient(0, 0, W, H);
     background.addColorStop(0, "#f8fcef");
@@ -1240,7 +1321,7 @@
     const boardX = 45;
     const boardY = 375;
     const boardW = 810;
-    const boardH = 1415;
+    const boardH = 1375;
     const headerH = 42;
     const widthWeights = stages.map((_, index) => .82 + index * .13);
     const weightTotal = widthWeights.reduce((sum, value) => sum + value, 0);
@@ -1281,15 +1362,68 @@
       });
       x += columnW;
     });
-    drawQrCode(ctx, createJourneyQr(), 748, 1810, 105);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#284332";
+    ctx.font = "900 28px 'Microsoft YaHei'";
+    ctx.fillText("你可能错过的 3 首遗珠", 45, 1798);
+    const profile = window.DAN_ISLAND_RECOMMENDER?.profile(songs, state) || [];
+    ctx.fillStyle = "#75669b";
+    ctx.font = "15px 'Microsoft YaHei'";
+    ctx.fillText(profile.length ? `偏爱坐标：${profile.join(" · ")}` : "根据这一路的选择生成", 45, 1825);
+
+    recommendationSongs.forEach((song, index) => {
+      const cardX = 45 + index * 270;
+      const cardY = 1845;
+      const cardW = 252;
+      const cardH = 235;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 18);
+      ctx.fillStyle = index % 2 ? "#f6f2fc" : "#fbfcf7";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(55,76,61,.16)";
+      ctx.stroke();
+      const recommendationCover = recommendationCovers[index];
+      if (recommendationCover) {
+        ctx.save();
+        roundRect(ctx, cardX + 14, cardY + 14, 68, 68, 10);
+        ctx.clip();
+        ctx.drawImage(recommendationCover, cardX + 14, cardY + 14, 68, 68);
+        ctx.restore();
+      }
+      ctx.fillStyle = "#725eaa";
+      ctx.font = "900 11px 'Microsoft YaHei'";
+      ctx.fillText(`0${index + 1} · ${recommendations[index]?.label || "遗珠发现"}`, cardX + 94, cardY + 32);
+      ctx.fillStyle = "#26382d";
+      ctx.font = "900 20px 'Microsoft YaHei'";
+      ctx.fillText(fitText(ctx, song.title, 140), cardX + 94, cardY + 61);
+      ctx.fillStyle = "#7e887f";
+      ctx.font = "11px 'Microsoft YaHei'";
+      ctx.fillText(fitText(ctx, song.release, 140), cardX + 94, cardY + 79);
+      ctx.fillStyle = "#526158";
+      ctx.font = "13px 'Microsoft YaHei'";
+      const reasonLines = wrapCanvasText(ctx, recommendations[index]?.reason || "值得重新听见的一首歌。", cardW - 28).slice(0, 4);
+      reasonLines.forEach((line, lineIndex) => ctx.fillText(line, cardX + 14, cardY + 112 + lineIndex * 20));
+      ctx.fillStyle = "#e7ecdF";
+      roundRect(ctx, cardX + 14, cardY + 198, cardW - 28, 24, 12);
+      ctx.fill();
+      ctx.fillStyle = "#526850";
+      ctx.textAlign = "center";
+      ctx.font = "900 10px 'Microsoft YaHei'";
+      ctx.fillText("回到测试结果页即可跳转听歌", cardX + cardW / 2, cardY + 214);
+      ctx.textAlign = "left";
+    });
+
+    ctx.fillStyle = "#8a938c";
+    ctx.font = "12px 'Microsoft YaHei'";
+    ctx.fillText("遗珠标签来自选择轨迹与站内曝光先验，不代表平台实时收藏量。", 45, 2110);
+    drawQrCode(ctx, createJourneyQr(), 748, 2145, 105);
     ctx.textAlign = "left";
     ctx.fillStyle = "#284332";
     ctx.font = "900 20px 'Microsoft YaHei'";
-    ctx.fillText("把蛋岛地图漂流给下一位纯牛奶", 45, 1845);
+    ctx.fillText("把蛋岛地图漂流给下一位纯牛奶", 45, 2180);
     ctx.fillStyle = "#708074";
     ctx.font = "16px 'Microsoft YaHei'";
-    ctx.fillText("曲库来源：公开发行作品、影视原声与公开舞台整理", 45, 1882);
-    ctx.fillText(`选择只保存在本机 · 蛋岛环游记 · ${new Date().toLocaleDateString("zh-CN")}`, 45, 1918);
+    ctx.fillText("曲库来源：公开发行作品、影视原声与公开舞台整理", 45, 2220);
+    ctx.fillText(`选择只保存在本机 · 蛋岛环游记 · ${new Date().toLocaleDateString("zh-CN")}`, 45, 2260);
     ctx.textAlign = "left";
     posterBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", .95));
     if (!posterBlob) throw new Error("浏览器未能导出 PNG Blob");
@@ -1447,6 +1581,10 @@
       catch { showToast("复制失败，请使用浏览器分享地址"); }
     });
     els.retrySubmission?.addEventListener("click", () => submitCompletedJourney());
+    els.discoveryGrid?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-discovery-action]");
+      if (button) handleDiscoveryFeedback(button.dataset.discoveryAction, button.dataset.songId);
+    });
     window.addEventListener("online", () => {
       if (state?.phase === "complete" && state.submission?.state === "failed") submitCompletedJourney();
     });

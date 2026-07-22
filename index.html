@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <script>(()=>{if(location.hostname.toLowerCase()!=="umikaze07kari.github.io")return;const p=location.pathname.replace(/^\/SYC128(?:\/|$)/i,"/");location.replace("https://dan-island-d8gwz7m0v7cc4c765-1422249946.tcloudbaseapp.com"+(p||"/")+location.search+location.hash)})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#557c45">
   <meta name="description" content="开启蛋岛环游记，用一场音乐探险选出你心里的单依纯歌曲 Top 1。">
@@ -35,7 +34,7 @@
         <div class="hero-copy">
           <p class="eyebrow">EGG ISLAND · MUSIC ODYSSEY</p>
           <h1>沿着单依纯的音乐地图，<span>选出心里的最爱。</span></h1>
-          <p class="custom-challenge-callout"><b>已经玩过热门歌曲？</b> 来试试自定义挑战吧。也可以<a href="leaderboard.html">查看大家的结果</a>。</p>
+          <p class="custom-challenge-callout"><b>选出喜欢的歌，还能解锁 3 首单依纯遗珠推荐。</b> 也许下一首循环播放，就藏在你还没留意的角落。也可以<a href="leaderboard.html">查看大家的结果</a>。</p>
 
           <section class="launch-config" aria-labelledby="rangeTitle">
             <div class="config-heading"><span>01 / 出发准备</span><b id="rangeTitle">选择本次环游范围</b><em id="selectedSongCount">169 首</em></div>
@@ -119,6 +118,15 @@
         <div class="island-route" id="finalRoute"></div>
       </div>
 
+      <section class="discovery-section" aria-labelledby="discoveryTitle">
+        <div class="discovery-heading">
+          <div><span>ISLAND DISCOVERY</span><h2 id="discoveryTitle">你可能错过的 3 首遗珠</h2></div>
+          <p id="discoveryProfile">根据这一路的选择生成</p>
+        </div>
+        <div class="discovery-grid" id="discoveryGrid"></div>
+        <p class="discovery-note">“遗珠”依据本次选择轨迹与站内曝光先验生成，不代表音乐平台实时收藏量。</p>
+      </section>
+
       <div class="result-share-panel">
         <div class="result-actions">
           <a class="primary-button result-link-button" href="leaderboard.html">查看岛民总榜 <span>→</span></a>
@@ -181,6 +189,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="songs.js"></script>
+  <script src="song-vectors.js"></script>
+  <script src="recommendation.js"></script>
   <script src="config.js"></script>
   <script src="vendor/qrcode.js"></script>
   <script src="audio.js"></script>
