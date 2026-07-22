@@ -95,7 +95,6 @@
   let state = null;
   let posterBlob = null;
   let toastTimer = null;
-  let audio = null;
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
   const preloadedCovers = new Set();
 
@@ -1294,108 +1293,16 @@
     }
   }
 
-  function createAudioSystem() {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return null;
-    const context = new AudioContext();
-    const master = context.createGain();
-    const filter = context.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 1500;
-    master.gain.value = 0;
-    master.connect(filter).connect(context.destination);
-    const progression = [
-      [261.63, 329.63, 392, 493.88],
-      [220, 261.63, 329.63, 392],
-      [174.61, 220, 261.63, 329.63],
-      [196, 261.63, 293.66, 392]
-    ];
-    let enabled = false;
-    let timer = null;
-    let step = 0;
-    let nextNoteAt = 0;
-
-    function tone(frequency, start, duration, volume, type = "sine") {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = type;
-      oscillator.frequency.value = frequency;
-      oscillator.detune.value = type === "triangle" ? -4 : 3;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(volume, start + Math.min(.16, duration * .25));
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-      oscillator.connect(gain).connect(master);
-      oscillator.start(start);
-      oscillator.stop(start + duration + .05);
-    }
-
-    function schedule() {
-      while (nextNoteAt < context.currentTime + .8) {
-        const chord = progression[Math.floor(step / 8) % progression.length];
-        const note = chord[[0, 2, 1, 3, 2, 1, 0, 2][step % 8]];
-        tone(note, nextNoteAt, 1.6, .032);
-        if (step % 8 === 0) {
-          tone(chord[0] / 2, nextNoteAt, 3.7, .026, "triangle");
-          chord.slice(1).forEach((frequency, index) => tone(frequency / 2, nextNoteAt + index * .045, 3.25, .011));
-        }
-        nextNoteAt += .5;
-        step += 1;
-      }
-    }
-
-    function setEnabled(value) {
-      enabled = value;
-      context.resume();
-      master.gain.cancelScheduledValues(context.currentTime);
-      master.gain.setTargetAtTime(value ? .72 : 0.0001, context.currentTime, value ? .7 : .12);
-      if (value) {
-        nextNoteAt = Math.max(nextNoteAt, context.currentTime + .05);
-        schedule();
-        timer = timer || setInterval(schedule, 300);
-      } else if (timer) {
-        clearInterval(timer);
-        timer = null;
-      }
-    }
-
-    function clickSound() {
-      if (!enabled) return;
-      const now = context.currentTime;
-      tone(660, now, .11, .07);
-      tone(880, now + .055, .14, .045, "triangle");
-    }
-
-    return { setEnabled, clickSound, get enabled() { return enabled; } };
-  }
-
-  function toggleMusic() {
-    audio = audio || createAudioSystem();
-    if (!audio) {
-      showToast("当前浏览器暂不支持网页音乐");
-      return;
-    }
-    const enabled = !audio.enabled;
-    audio.setEnabled(enabled);
-    const button = $("#musicToggle");
-    button.setAttribute("aria-pressed", String(enabled));
-    button.setAttribute("aria-label", enabled ? "关闭背景音乐和按钮音效" : "开启背景音乐和按钮音效");
-    $(".music-label", button).textContent = enabled ? "音乐:开" : "音乐:关";
-    showToast(enabled ? "原创舒缓 BGM 已开启" : "音乐与按钮音效已关闭");
-  }
-
   function answerSoundPrompt(enable) {
     $("#soundPrompt").close();
-    if (enable) toggleMusic();
+    window.DAN_ISLAND_AUDIO?.setEnabled(enable);
+    if (enable && !window.DAN_ISLAND_AUDIO?.supported) showToast("当前浏览器暂不支持网页音乐");
   }
 
   function bindEvents() {
-    $("#musicToggle").addEventListener("click", toggleMusic);
     $("#enableSound").addEventListener("click", () => answerSoundPrompt(true));
     $("#disableSound").addEventListener("click", () => answerSoundPrompt(false));
     $("#soundPrompt").addEventListener("cancel", () => answerSoundPrompt(false));
-    document.addEventListener("click", (event) => {
-      if (event.target.closest("button") && !event.target.closest("#musicToggle")) audio?.clickSound();
-    });
     $$('[data-home]').forEach((button) => button.addEventListener("click", () => showView("home")));
     $("#startJourney").addEventListener("click", startJourney);
     els.collectionToggles.addEventListener("change", updateSelectedCount);
@@ -1473,7 +1380,7 @@
     renderJourneyConfig();
     bindEvents();
     updateContinue();
-    $("#soundPrompt").showModal();
+    if (!window.DAN_ISLAND_AUDIO?.state.decided) $("#soundPrompt").showModal();
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 

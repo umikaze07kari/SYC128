@@ -18,6 +18,7 @@
     <div class="checks" id="checks" aria-live="polite"></div>
   </main>
   <script src="config.js"></script>
+  <script src="audio.js"></script>
   <script>
     (()=>{"use strict";const api=String(window.DAN_ISLAND_CONFIG?.apiBaseUrl||"").replace(/\/$/,"");const box=document.querySelector("#checks");const report=[];
     function add(name,ok,summary,detail){report.push(`[${ok?"正常":"异常"}] ${name}\n${summary}${detail?`\n${detail}`:""}`);const card=document.createElement("section");card.className="check";const head=document.createElement("header"),title=document.createElement("b"),status=document.createElement("strong"),copy=document.createElement("div");title.textContent=name;status.className=ok?"ok":"fail";status.textContent=ok?"正常":"异常";copy.textContent=summary;head.append(title,status);card.append(head,copy);if(detail){const pre=document.createElement("pre");pre.textContent=detail;card.append(pre)}box.append(card)}

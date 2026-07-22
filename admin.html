@@ -10,7 +10,10 @@
 <body class="admin-page">
   <header class="topbar">
     <a class="brand" href="index.html"><span class="brand-egg">蛋</span><span><b>提交复核</b><small>MODERATION DESK</small></span></a>
-    <a class="leaderboard-link" href="leaderboard.html">查看总榜</a>
+    <div class="topbar-actions">
+      <button class="music-toggle" data-audio-toggle type="button" aria-label="开启背景音乐和按钮音效" aria-pressed="false"><span class="music-icon" aria-hidden="true">♪</span><span class="music-label">音乐:关</span></button>
+      <a class="leaderboard-link" href="leaderboard.html">查看总榜</a>
+    </div>
   </header>
   <main class="admin-main">
     <section class="admin-login" id="adminLogin">
@@ -31,6 +34,7 @@
   <dialog class="modal admin-dialog" id="adminDialog"><button class="modal-close" id="adminDialogClose" type="button">×</button><div id="adminDetail"></div></dialog>
   <script src="songs.js"></script>
   <script src="config.js"></script>
+  <script src="audio.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

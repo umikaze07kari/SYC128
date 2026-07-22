@@ -157,6 +157,8 @@ main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding-bottom: ca
 .music-icon { width:25px; height:25px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#879487; font:900 14px/1 Georgia,serif; transition:background .2s,transform .2s; }
 .music-toggle[aria-pressed="true"] { color:var(--moss-900); background:#f3f8e9; box-shadow:3px 3px 0 #cfc5ed; }
 .music-toggle[aria-pressed="true"] .music-icon { background:var(--moss-600); animation:musicPulse 1.8s ease-in-out infinite; }
+.topbar-actions { display:flex; align-items:center; gap:9px; }
+.audio-floating { position:fixed; z-index:30; right:16px; bottom:calc(16px + var(--safe)); }
 @keyframes musicPulse { 50% { transform:rotate(-8deg) scale(1.08); } }
 .sound-prompt { text-align:center; }
 .sound-prompt .eyebrow { margin-bottom:8px; }
