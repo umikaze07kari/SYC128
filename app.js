@@ -1296,7 +1296,7 @@
   function answerSoundPrompt(enable) {
     $("#soundPrompt").close();
     window.DAN_ISLAND_AUDIO?.setEnabled(enable);
-    if (enable && !window.DAN_ISLAND_AUDIO?.supported) showToast("当前浏览器暂不支持网页音乐");
+    if (enable) showToast("正在开启音乐与按钮音效…");
   }
 
   function bindEvents() {

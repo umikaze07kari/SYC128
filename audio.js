@@ -2,7 +2,6 @@
   "use strict";
 
   const STORAGE_KEY = "dan-island-audio-v1";
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
   const progression = [
     [261.63, 329.63, 392, 493.88],
     [220, 261.63, 329.63, 392],
@@ -13,8 +12,14 @@
   let context = null;
   let master = null;
   let timer = null;
+  let retryTimer = null;
+  let retryUntil = 0;
   let step = 0;
   let nextNoteAt = 0;
+
+  function audioContextConstructor() {
+    return window.AudioContext || window.webkitAudioContext || null;
+  }
 
   function readState() {
     try {
@@ -34,8 +39,10 @@
   }
 
   function ensureContext() {
-    if (context || !AudioContext) return context;
-    context = new AudioContext();
+    if (context) return context;
+    const Context = audioContextConstructor();
+    if (!Context) return null;
+    try { context = new Context(); } catch { return null; }
     master = context.createGain();
     const filter = context.createBiquadFilter();
     filter.type = "lowpass";
@@ -43,6 +50,14 @@
     master.gain.value = 0.0001;
     master.connect(filter).connect(context.destination);
     return context;
+  }
+
+  function scheduleRetry() {
+    if (!state.enabled || retryTimer || Date.now() >= retryUntil) return;
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      startPlayback();
+    }, 350);
   }
 
   function tone(frequency, start, duration, volume, type = "sine") {
@@ -76,9 +91,18 @@
   }
 
   async function startPlayback() {
-    if (!state.enabled || !ensureContext()) return;
+    if (!state.enabled) return false;
+    if (!ensureContext()) {
+      scheduleRetry();
+      return false;
+    }
     try { await context.resume(); } catch {}
-    if (context.state !== "running" || !state.enabled) return;
+    if (context.state !== "running" || !state.enabled) {
+      scheduleRetry();
+      return false;
+    }
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
     const elapsedSteps = Math.max(0, Math.floor((Date.now() - state.startedAt) / 500));
     if (!timer) step = elapsedSteps;
     nextNoteAt = Math.max(nextNoteAt, context.currentTime + .05);
@@ -86,11 +110,14 @@
     master.gain.setTargetAtTime(.72, context.currentTime, .7);
     schedule();
     timer = timer || setInterval(schedule, 300);
+    return true;
   }
 
   function stopPlayback() {
     if (timer) clearInterval(timer);
     timer = null;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
     if (!context || !master) return;
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.setTargetAtTime(0.0001, context.currentTime, .12);
@@ -110,6 +137,7 @@
     state.enabled = Boolean(value);
     if (options.decided !== false) state.decided = true;
     if (state.enabled && (!wasEnabled || !state.startedAt)) state.startedAt = Date.now();
+    if (state.enabled) retryUntil = Date.now() + 10000;
     saveState();
     updateControls();
     if (state.enabled) startPlayback();
@@ -150,6 +178,11 @@
     document.addEventListener("pointerdown", recover, { passive: true });
     document.addEventListener("keydown", recover);
     document.addEventListener("visibilitychange", () => { if (!document.hidden && state.enabled) startPlayback(); });
+    document.addEventListener("WeixinJSBridgeReady", () => {
+      if (!state.enabled) return;
+      retryUntil = Date.now() + 10000;
+      startPlayback();
+    });
     if (state.enabled) startPlayback();
   }
 
@@ -165,7 +198,7 @@
     setEnabled,
     clickSound,
     get state() { return { ...state }; },
-    get supported() { return Boolean(AudioContext); }
+    get supported() { return Boolean(audioContextConstructor()); }
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind, { once: true });
   else bind();
