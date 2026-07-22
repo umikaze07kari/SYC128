@@ -27,17 +27,25 @@ const rawSongs = [
   ["duo-shao-de-guang-yin", "多少的光阴", "album", "solo", "叙事", "专辑《纯妹妹》", 64],
   ["jia-ru-wo-men-hai-ai-zhe", "假如我们还爱着", "album", "solo", "抒情", "专辑《纯妹妹》", 59],
 
-  // 音乐综艺《歌手2025》（珠玉、有趣的节目版本已按要求移除）
-  ["li-bai-live", "李白", "variety", "solo", "摇滚", "综艺《歌手2025》", 93],
-  ["luo-ye-gui-gen-live", "落叶归根", "variety", "solo", "抒情", "综艺《歌手2025》", 81],
-  ["tian-kong-live", "天空", "variety", "solo", "大气", "综艺《歌手2025》", 76],
-  ["kai-shi-dong-le-live", "开始懂了", "variety", "solo", "抒情", "综艺《歌手2025》", 73],
-  ["dear-friend-live", "Dear Friend", "variety", "solo", "抒情", "综艺《歌手2025》", 66],
-  ["yi-ge-ren-tiao-wu-live", "一个人跳舞", "variety", "solo", "律动", "综艺《歌手2025》", 66],
-  ["ai-qing-live", "爱情", "variety", "solo", "抒情", "综艺《歌手2025》", 64],
-  ["wu-niang-live", "舞娘", "variety", "solo", "舞曲", "综艺《歌手2025》", 63],
-  ["meng-yi-chang-live", "梦一场", "variety", "solo", "叙事", "综艺《歌手2025》", 61],
-  ["si-nian-shi-yi-zhong-bing-live", "思念是一种病", "variety", "solo", "律动", "综艺《歌手2025》", 58],
+  // 单曲
+  ["zai-ye-li-tiao-wu", "在夜里跳舞", "single", "solo", "律动", "个人单曲", 96],
+  ["wei", "喂", "single", "solo", "轻快", "个人单曲", 90],
+  ["ai-wo-de-shi-hou", "爱我的时候", "single", "collab", "抒情", "个人单曲", 88],
+  ["zhao-pian", "照片", "single", "solo", "叙事", "个人单曲", 85],
+  ["oh-lala", "Oh lala", "single", "solo", "R&B", "合作企划《DNA》", 72],
+  ["4ever-in-u", "4ever in U", "single", "solo", "R&B", "合作数字单曲", 64],
+  ["fen-shen", "分身", "single", "solo", "情绪", "个人单曲", 61],
+  ["qi-guan", "奇观", "single", "solo", "大气", "个人单曲", 61],
+  ["liang-zai-ri-ji", "靓仔日记", "single", "solo", "轻快", "个人单曲", 58],
+  ["guang-bo", "光波", "single", "solo", "律动", "巡演主题数字单曲", 57],
+  ["jun-live", "君", "single", "solo", "国风", "个人单曲", 84],
+  ["chun-mei-mei-sleep", "纯寐寐", "single", "solo", "氛围", "个人单曲", 70],
+  ["tong-xin-xiang-wei-lai", "同心向未来", "single", "solo", "明亮", "个人单曲", 72],
+  ["xing-mang", "星芒", "single", "solo", "明亮", "个人单曲", 76],
+  ["shan-li-de-yang-guang", "山里的阳光", "single", "solo", "治愈", "个人单曲", 70],
+  ["qing-ren", "情人", "single", "solo", "抒情", "个人单曲", 82],
+  ["always-on-my-way", "always on my way", "single", "collab", "R&B", "个人单曲 · 合唱", 76],
+  ["sinking", "Sinking", "single", "collab", "R&B", "个人单曲 · 合唱", 75],
 
   // OST：出处经公开音乐页面及作品资料核对
   ["xiang-ni-shi-feng-qi", "想你时风起", "ost", "solo", "抒情", "电视剧《我的人间烟火》· 回忆主题曲", 100],
@@ -64,58 +72,41 @@ const rawSongs = [
   ["ru-xing", "如星", "ost", "solo", "抒情", "电视剧《奇迹》· 影视原声", 46],
   ["di-yi-ci", "第一次", "ost", "solo", "抒情", "电影《小美人鱼》· 中文插曲", 44],
   ["yi-sheng-yi-nian", "一生一念", "ost", "solo", "国风", "电视剧《祈今朝》· 主题曲", 42],
+  ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "ost", "solo", "经典", "电影《一秒钟》· 推广曲", 74],
+  ["yong-bu-shi-lian-de-ai", "永不失联的爱", "ost", "solo", "抒情", "《明天你是否依然爱我》电影推广曲", 97],
+  ["sen-zhi-lian-ge", "森之恋歌", "ost", "solo", "治愈", "《和平精英》森之鹿灵印象曲", 91],
+  ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "ost", "solo", "明亮", "襄阳华侨城·奇幻谷主题曲", 78],
+  ["wo-zai-yi-de", "我在意的", "ost", "solo", "抒情", "《爱情有烟火》电视剧主题曲", 72],
+  ["mei-man-yi-sheng", "美满一生", "ost", "solo", "治愈", "2025中秋主题歌曲", 73],
+  ["hong-qing-ting", "红蜻蜓", "ost", "solo", "治愈", "《人生路不熟》电影特别歌谣", 75],
+  ["piao-yang-guo-hai-lai-kan-ni", "飘洋过海来看你", "ost", "collab", "抒情", "《合法伴侣》电影推广曲", 84],
+  ["wo-men-xiang-xin", "我们相信", "ost", "collab", "大气", "第十五届海峡论坛· 主题歌", 73],
+  ["wu-you-nian", "无忧·念", "ost", "collab", "国风", "《无忧渡》影视剧片尾曲", 70],
+  ["wei-wan-dai-xu", "未完待续", "ost", "collab", "叙事", "《王者荣耀》520心动手记主题曲", 71],
 
-  // 单曲
-  ["zai-ye-li-tiao-wu", "在夜里跳舞", "single", "solo", "律动", "个人单曲", 96],
-  ["wei", "喂", "single", "solo", "轻快", "个人单曲", 90],
-  ["ai-wo-de-shi-hou", "爱我的时候", "single", "collab", "抒情", "个人单曲", 88],
-  ["zhao-pian", "照片", "single", "solo", "叙事", "个人单曲", 85],
-  ["oh-lala", "Oh lala", "single", "solo", "R&B", "合作企划《DNA》", 72],
-  ["tender", "TENDER", "single", "solo", "R&B", "个人单曲", 67],
-  ["luo-bi-cheng-shu", "落笔成书", "single", "solo", "国风", "个人单曲", 66],
-  ["zhong-shen-gu-du", "终身孤独", "single", "solo", "情绪", "个人单曲", 64],
-  ["4ever-in-u", "4ever in U", "single", "solo", "R&B", "合作数字单曲", 64],
-  ["fen-shen", "分身", "single", "solo", "情绪", "个人单曲", 61],
-  ["qi-guan", "奇观", "single", "solo", "大气", "个人单曲", 61],
-  ["liang-zai-ri-ji", "靓仔日记", "single", "solo", "轻快", "个人单曲", 58],
-  ["guang-bo", "光波", "single", "solo", "律动", "巡演主题数字单曲", 57],
-  ["jun-live", "君", "single", "solo", "国风", "个人单曲", 84],
-  ["tong-xin-xiang-wei-lai", "同心向未来", "single", "solo", "明亮", "个人单曲", 72],
-  ["shan-li-de-yang-guang", "山里的阳光", "single", "solo", "治愈", "个人单曲", 70],
-
-  // 独唱作品（《如星》已在 OST 分类中收录，不重复添加）
-  ["yong-bu-shi-lian-de-ai", "永不失联的爱", "single", "solo", "抒情", "个人单曲", 97],
-  ["sen-zhi-lian-ge", "森之恋歌", "single", "solo", "治愈", "个人单曲", 91],
-  ["xing-mang", "星芒", "single", "solo", "明亮", "个人单曲", 76],
-  ["ai-de-qi-huan-lv-xing", "爱的奇幻旅行", "single", "solo", "明亮", "个人单曲", 78],
-  ["hong-qing-ting", "红蜻蜓", "single", "solo", "治愈", "个人单曲", 75],
-  ["qing-ren", "情人", "single", "solo", "抒情", "个人单曲", 82],
-  ["mei-man-yi-sheng", "美满一生", "single", "solo", "治愈", "个人单曲", 73],
-  ["chun-mei-mei-sleep", "纯寐寐", "single", "solo", "氛围", "个人单曲", 70],
-  ["wo-zai-yi-de", "我在意的", "single", "solo", "抒情", "个人单曲", 72],
-
-  // 合唱作品
-  ["piao-yang-guo-hai-lai-kan-ni", "飘洋过海来看你", "single", "collab", "抒情", "个人单曲 · 合唱", 84],
-  ["always-on-my-way", "always on my way", "single", "collab", "R&B", "个人单曲 · 合唱", 76],
-  ["sinking", "Sinking", "single", "collab", "R&B", "个人单曲 · 合唱", 75],
-  ["yue-liang-wu-tai", "月亮舞台", "single", "collab", "氛围", "个人单曲 · 合唱", 77],
-  ["wo-men-xiang-xin", "我们相信", "single", "collab", "大气", "个人单曲 · 合唱", 73],
-  ["jian-xin-ru-wu", "见信如晤", "single", "collab", "叙事", "个人单曲 · 合唱", 72],
-  ["wu-you-nian", "无忧·念", "single", "collab", "国风", "个人单曲 · 合唱", 70],
-  ["bu-ru-jian-yi-mian", "不如见一面", "single", "collab", "抒情", "个人单曲 · 合唱", 81],
-  ["wei-wan-dai-xu", "未完待续", "single", "collab", "叙事", "个人单曲 · 合唱", 71],
-
-  // 合作曲
-  ["dong-bei-min-yao", "东北民谣", "single", "collab", "叙事", "合作曲", 80],
-  ["tian-tian", "天天", "single", "collab", "轻快", "合作曲", 79],
-  ["xiang-si", "相思", "single", "collab", "国风", "合作曲", 78],
-  ["tian-di-long-lin", "天地龙鳞", "single", "collab", "大气", "合作曲", 77],
-  ["song-ni-yi-duo-xiao-hong-hua", "送你一朵小红花", "single", "collab", "治愈", "合作曲", 78],
-  ["feng-xian", "奉献", "single", "collab", "经典", "合作曲", 76],
-  ["yi-dong-de-xin", "驿动的心", "single", "collab", "经典", "合作曲", 76],
-  ["fei-yun-zhi-xia", "飞云之下", "single", "collab", "大气", "合作曲", 82],
-  ["tui-kai-shi-jie-de-men", "推开世界的门", "single", "collab", "治愈", "合作曲", 81],
-  ["yun-yu-hai", "云与海", "single", "collab", "抒情", "合作曲", 80],
+  // 晚会舞台
+  ["zhe-shi-jie-na-me-duo-ren", "这世界那么多人", "live", "collab", "抒情", "晚会舞台", 81],
+  ["this-is-me", "This is me", "live", "solo", "大气", "晚会舞台", 78],
+  ["gui", "归", "live", "solo", "国风", "晚会舞台", 77],
+  ["ru-yuan", "如愿", "live", "solo", "大气", "晚会舞台", 84],
+  ["yi-zhi-hen-an-jing", "一直很安静", "live", "solo", "抒情", "晚会舞台", 82],
+  ["si-nian", "思念", "live", "solo", "情绪", "晚会舞台", 79],
+  ["xin-huo", "心火", "live", "collab", "情绪", "晚会舞台", 78],
+  ["cheng-shi-zhi-guang", "城市之光", "live", "solo", "明亮", "晚会舞台", 76],
+  ["ni-jiu-bu-yao-xiang-qi-wo", "你就不要想起我", "live", "solo", "抒情", "晚会舞台", 83]
+  ["dong-bei-min-yao", "东北民谣", "live", "collab", "叙事", "晚会舞台", 80],
+  ["tian-tian", "天天", "live", "collab", "轻快", "晚会舞台", 79],
+  ["xiang-si", "相思", "live", "collab", "国风", "晚会舞台", 78],
+  ["tian-di-long-lin", "天地龙鳞", "live", "collab", "大气", "晚会舞台", 77],
+  ["song-ni-yi-duo-xiao-hong-hua", "送你一朵小红花", "live", "collab", "治愈", "晚会舞台", 78],
+  ["feng-xian", "奉献", "live", "collab", "经典", "晚会舞台", 76],
+  ["yi-dong-de-xin", "驿动的心", "live", "collab", "经典", "晚会舞台", 76],
+  ["fei-yun-zhi-xia", "飞云之下", "live", "collab", "大气", "晚会舞台", 82],
+  ["tui-kai-shi-jie-de-men", "推开世界的门", "live", "collab", "治愈", "晚会舞台", 81],
+  ["yun-yu-hai", "云与海", "live", "collab", "抒情", "晚会舞台", 80],
+  ["jian-xin-ru-wu", "见信如晤", "live", "collab", "叙事", "晚会舞台", 72],
+  ["bu-ru-jian-yi-mian", "不如见一面", "live", "collab", "抒情", "晚会舞台", 81],
+  ["yue-liang-wu-tai", "月亮舞台", "live", "collab", "氛围", "晚会舞台", 77],
 
   // 演唱会舞台
   ["weak-live", "Weak", "live", "solo", "R&B", "演唱会", 76],
@@ -142,6 +133,7 @@ const rawSongs = [
   ["she-li-duan", "舍离断", "variety", "collab", "国风", "综艺《天赐的声音》", 72],
   ["yuan-liang", "原谅", "variety", "collab", "抒情", "综艺《天赐的声音》", 82],
 
+  // 《为歌而赞》
   ["soap", "Soap", "variety", "solo", "R&B", "综艺《为歌而赞》", 74],
 
   // 《说唱听我的》
@@ -188,24 +180,29 @@ const rawSongs = [
   ["wo-yao-ni", "我要你", "variety", "solo", "抒情", "综艺《剧好听的歌》", 78],
   ["dian-qi-jiao-jian-ai", "踮起脚尖爱", "variety", "solo", "抒情", "综艺《剧好听的歌》", 83],
 
-  // 《音乐缘计划》与《国乐无双》
+  // 《音乐缘计划》
   ["tai-yang-gong-zhu", "太阳公主", "variety", "solo", "明亮", "综艺《音乐缘计划》", 78],
   ["ming-zhi-gu-wen", "明知故问", "variety", "collab", "情绪", "综艺《音乐缘计划》", 80],
   ["let-me-go", "Let Me Go", "variety", "solo", "R&B", "综艺《音乐缘计划》", 77],
+  ["tender", "TENDER", "variety", "solo", "R&B", "综艺《音乐缘计划》", 67],
+  ["luo-bi-cheng-shu", "落笔成书", "variety", "solo", "国风", "综艺《音乐缘计划》", 66],
+  ["zhong-shen-gu-du", "终身孤独", "variety", "solo", "情绪", "综艺《音乐缘计划》", 64],
+  
+  // 《国乐无双》
   ["gan-lan-shu", "橄榄树", "variety", "solo", "经典", "综艺《国乐无双》", 76],
 
-  ["gei-dian-ying-ren-de-qing-shu", "给电影人的情书", "single", "solo", "经典", "个人单曲 · 电影《一秒钟》推广曲", 74],
+  // 音乐综艺《歌手2025》（珠玉、有趣的节目版本已按要求移除）
+  ["li-bai-live", "李白", "variety", "solo", "摇滚", "综艺《歌手2025》", 93],
+  ["luo-ye-gui-gen-live", "落叶归根", "variety", "solo", "抒情", "综艺《歌手2025》", 81],
+  ["tian-kong-live", "天空", "variety", "solo", "大气", "综艺《歌手2025》", 76],
+  ["kai-shi-dong-le-live", "开始懂了", "variety", "solo", "抒情", "综艺《歌手2025》", 73],
+  ["dear-friend-live", "Dear Friend", "variety", "solo", "抒情", "综艺《歌手2025》", 66],
+  ["yi-ge-ren-tiao-wu-live", "一个人跳舞", "variety", "solo", "律动", "综艺《歌手2025》", 66],
+  ["ai-qing-live", "爱情", "variety", "solo", "抒情", "综艺《歌手2025》", 64],
+  ["wu-niang-live", "舞娘", "variety", "solo", "舞曲", "综艺《歌手2025》", 63],
+  ["meng-yi-chang-live", "梦一场", "variety", "solo", "叙事", "综艺《歌手2025》", 61],
+  ["si-nian-shi-yi-zhong-bing-live", "思念是一种病", "variety", "solo", "律动", "综艺《歌手2025》", 58],
 
-  // 晚会舞台
-  ["zhe-shi-jie-na-me-duo-ren", "这世界那么多人", "live", "collab", "抒情", "晚会舞台", 81],
-  ["this-is-me", "This is me", "live", "solo", "大气", "晚会舞台", 78],
-  ["gui", "归", "live", "solo", "国风", "晚会舞台", 77],
-  ["ru-yuan", "如愿", "live", "solo", "大气", "晚会舞台", 84],
-  ["yi-zhi-hen-an-jing", "一直很安静", "live", "solo", "抒情", "晚会舞台", 82],
-  ["si-nian", "思念", "live", "solo", "情绪", "晚会舞台", 79],
-  ["xin-huo", "心火", "live", "collab", "情绪", "晚会舞台", 78],
-  ["cheng-shi-zhi-guang", "城市之光", "live", "solo", "明亮", "晚会舞台", 76],
-  ["ni-jiu-bu-yao-xiang-qi-wo", "你就不要想起我", "live", "solo", "抒情", "晚会舞台", 83]
 ];
 
 const SOURCE_META = {
